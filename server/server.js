@@ -34,6 +34,15 @@ db.exec(`
     timestamp           TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (bin_id) REFERENCES bins(id)
   );
+
+  CREATE TABLE IF NOT EXISTS fill_cycles (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    bin_id        INTEGER NOT NULL,
+    compartment   TEXT    NOT NULL CHECK(compartment IN ('dry','wet')),
+    filled_at     TEXT    NOT NULL,
+    emptied_at    TEXT,
+    FOREIGN KEY (bin_id) REFERENCES bins(id)
+  );
 `);
 
 // Seed the single bin if not present
@@ -41,6 +50,63 @@ const seedBin = db.prepare(
   "INSERT OR IGNORE INTO bins (id, name, location, max_height_cm) VALUES (?, ?, ?, ?)",
 );
 seedBin.run(1, "Dustbin #001", "Main Campus", 50);
+
+// ── Fill-Cycle Detection ─────────────────────────────────────────────────────
+// Thresholds
+const FULL_THRESHOLD = 80; // % — crossing UP into this counts as a fill event
+const EMPTY_THRESHOLD = 20; // % — must drop below before the next fill is counted
+
+// In-memory state per "binId:compartment", lazy-initialized from last DB reading
+const fillStateCache = new Map();
+
+function getFillState(binId, compartment) {
+  const key = `${binId}:${compartment}`;
+  if (!fillStateCache.has(key)) {
+    const last = db
+      .prepare(
+        `SELECT fill_level_percent FROM measurements
+       WHERE bin_id=? AND compartment=? ORDER BY timestamp DESC LIMIT 1`,
+      )
+      .get(binId, compartment);
+    const pct = last?.fill_level_percent ?? 0;
+    fillStateCache.set(key, {
+      wasFull: pct >= FULL_THRESHOLD,
+      // Any reading below Full means the bin is not currently full,
+      // so treat it as "ready to count the next fill event".
+      // (Using < EMPTY_THRESHOLD caused bins at 20-94% to get permanently stuck.)
+      wasEmptied: pct < FULL_THRESHOLD,
+    });
+  }
+  return fillStateCache.get(key);
+}
+
+// Call this AFTER inserting the measurement row
+function recordFillCycle(binId, compartment, fillLevel, timestamp) {
+  const state = getFillState(binId, compartment);
+
+  if (!state.wasFull && fillLevel >= FULL_THRESHOLD && state.wasEmptied) {
+    // ─ Rising edge into Full → record a fill event
+    db.prepare(
+      `INSERT INTO fill_cycles (bin_id, compartment, filled_at) VALUES (?, ?, ?)`,
+    ).run(binId, compartment, timestamp);
+    state.wasFull = true;
+    state.wasEmptied = false;
+    console.log(`🗑️  Fill event: bin ${binId} ${compartment} @ ${timestamp}`);
+  } else if (state.wasFull && fillLevel < EMPTY_THRESHOLD) {
+    // ─ Bin emptied → mark the open cycle as closed
+    db.prepare(
+      `UPDATE fill_cycles SET emptied_at = ?
+       WHERE id = (
+         SELECT id FROM fill_cycles
+         WHERE bin_id = ? AND compartment = ? AND emptied_at IS NULL
+         ORDER BY id DESC LIMIT 1
+       )`,
+    ).run(timestamp, binId, compartment);
+    state.wasFull = false;
+    state.wasEmptied = true;
+    console.log(`♻️  Empty event: bin ${binId} ${compartment} @ ${timestamp}`);
+  }
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function computeFillLevel(rawDistanceCm, maxHeightCm) {
@@ -149,6 +215,72 @@ app.get("/api/bins", (req, res) => {
   res.json({ status: "success", bins: result });
 });
 
+// GET analytics — daily fill-cycle count per compartment, queried from fill_cycles table
+app.get("/api/bins/:id/analytics", (req, res) => {
+  const binId = parseInt(req.params.id, 10);
+  const bin = db.prepare("SELECT * FROM bins WHERE id = ?").get(binId);
+  if (!bin)
+    return res.status(404).json({ status: "error", message: "Bin not found" });
+
+  const days = Math.min(parseInt(req.query.range || "7", 10), 90);
+
+  // Build the full date list for the window (so zero days appear)
+  const allDays = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    allDays.push(d.toISOString().slice(0, 10));
+  }
+
+  // Query stored fill events directly
+  const rows = db
+    .prepare(
+      `
+    SELECT date(filled_at) AS day, compartment, COUNT(*) AS cnt
+    FROM fill_cycles
+    WHERE bin_id = ?
+      AND filled_at >= datetime('now', ? || ' days')
+    GROUP BY day, compartment
+    ORDER BY day ASC
+  `,
+    )
+    .all(binId, `-${days}`);
+
+  const dryMap = {},
+    wetMap = {};
+  rows.forEach((r) => {
+    if (r.compartment === "dry") dryMap[r.day] = r.cnt;
+    if (r.compartment === "wet") wetMap[r.day] = r.cnt;
+  });
+
+  const labels = allDays.map((d) => {
+    const date = new Date(d + "T00:00:00");
+    return date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+  });
+  const dry = allDays.map((d) => dryMap[d] ?? 0);
+  const wet = allDays.map((d) => wetMap[d] ?? 0);
+
+  // Today's totals for the side panel
+  const today = new Date().toISOString().slice(0, 10);
+  const latestDate = new Date().toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  res.json({
+    status: "success",
+    labels,
+    dry,
+    wet,
+    latest: {
+      date: latestDate,
+      dry: dryMap[today] ?? 0,
+      wet: wetMap[today] ?? 0,
+    },
+  });
+});
+
 // GET single bin with history
 app.get("/api/bins/:id", (req, res) => {
   const binId = parseInt(req.params.id, 10);
@@ -199,21 +331,20 @@ app.post("/api/bins/:id/measurement", (req, res) => {
       ((1 - fillLevel / 100) * bin.max_height_cm).toFixed(2),
     );
   } else {
-    return res
-      .status(400)
-      .json({
-        status: "error",
-        message: "Provide raw_distance_cm or fill_level_percent",
-      });
+    return res.status(400).json({
+      status: "error",
+      message: "Provide raw_distance_cm or fill_level_percent",
+    });
   }
 
   const timestamp = new Date().toISOString();
   db.prepare(
-    `
-    INSERT INTO measurements (bin_id, compartment, raw_distance_cm, fill_level_percent, timestamp)
-    VALUES (?, ?, ?, ?, ?)
-  `,
+    `INSERT INTO measurements (bin_id, compartment, raw_distance_cm, fill_level_percent, timestamp)
+     VALUES (?, ?, ?, ?, ?)`,
   ).run(binId, compartment, rawDistance, fillLevel, timestamp);
+
+  // Detect & persist fill cycle event
+  recordFillCycle(binId, compartment, fillLevel, timestamp);
 
   const updatedBin = getBinWithCompartments(binId);
   broadcast({ type: "update", bin: updatedBin });
@@ -252,6 +383,10 @@ app.post("/api/sensor-data", (req, res) => {
 
   insert.run(1, "dry", parseFloat(sensor1), dryFill, ts);
   insert.run(1, "wet", parseFloat(sensor2), wetFill, ts);
+
+  // Detect & persist fill cycle events for both compartments
+  recordFillCycle(1, "dry", dryFill, ts);
+  recordFillCycle(1, "wet", wetFill, ts);
 
   const updatedBin = getBinWithCompartments(1);
   broadcast({ type: "update", bin: updatedBin });

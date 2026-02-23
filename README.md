@@ -193,6 +193,27 @@ Invoke-RestMethod -Uri http://localhost:3001/api/sensor-data -Method POST `
 
 ---
 
+## 🗄️ Database Management
+
+The SQLite database (`server/bins.db`) stores all measurements and fill cycle records.
+
+### Clear fill cycle history (analytics chart only)
+
+```powershell
+# Run from the server/ directory
+node -e "import('better-sqlite3').then(({default:DB})=>{const db=new DB('./bins.db');const r=db.prepare('DELETE FROM fill_cycles').run();console.log('Deleted',r.changes,'fill cycle rows');db.close()})"
+```
+
+### Clear all raw measurements + fill cycles
+
+```powershell
+node -e "import('better-sqlite3').then(({default:DB})=>{const db=new DB('./bins.db');db.prepare('DELETE FROM measurements').run();db.prepare('DELETE FROM fill_cycles').run();console.log('All data cleared');db.close()})"
+```
+
+> **Note:** Restart the server after clearing so the in-memory fill-state cache resets.
+
+---
+
 ## 🛠️ Tech Stack
 
 | Layer       | Technology                        |
