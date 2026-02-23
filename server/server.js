@@ -61,28 +61,29 @@ app.get("/api/health", (req, res) => {
 
 // Endpoint to receive sensor data from ESP32
 app.post("/api/sensor-data", (req, res) => {
-  const { distance } = req.body;
+  const { sensor1, sensor2 } = req.body;
 
   // Validate incoming data
-  if (distance === undefined || distance === null) {
+  if (sensor1 === undefined || sensor2 === undefined) {
     return res.status(400).json({
       status: "error",
-      message: "Distance value is required",
+      message: "Both sensor1 and sensor2 values are required",
     });
   }
 
-  if (typeof distance !== "number" || distance < 0) {
+  if (typeof sensor1 !== "number" || typeof sensor2 !== "number") {
     return res.status(400).json({
       status: "error",
-      message: "Distance must be a positive number",
+      message: "Sensor values must be numbers",
     });
   }
 
-  console.log(`Received sensor data: ${distance} cm`);
+  console.log(`Sensor 1: ${sensor1} cm | Sensor 2: ${sensor2} cm`);
 
   // Prepare data with timestamp
   const sensorData = {
-    distance: distance,
+    sensor1,
+    sensor2,
     timestamp: new Date().toISOString(),
   };
 
