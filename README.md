@@ -163,6 +163,9 @@ Or send `fill_level_percent` directly if already computed on-device.
 ```
 
 ---
+## User login/Logout with Toast notification
+Default credential for login are ```admin/admin123```
+
 
 ## 🧪 Testing Without Hardware
 
