@@ -78,7 +78,7 @@ db.exec(`
     id          INTEGER PRIMARY KEY,
     name        TEXT    NOT NULL,
     location    TEXT    NOT NULL,
-    max_height_cm REAL  NOT NULL DEFAULT 50
+    max_height_cm REAL  NOT NULL DEFAULT 25
   );
 
   CREATE TABLE IF NOT EXISTS measurements (
@@ -113,7 +113,7 @@ db.exec(`
 const seedBin = db.prepare(
   "INSERT OR IGNORE INTO bins (id, name, location, max_height_cm) VALUES (?, ?, ?, ?)",
 );
-seedBin.run(1, "Dustbin #001", "Main Campus", 50);
+seedBin.run(1, "Dustbin #001", "Main Campus", 25);
 
 /**
  * Seed a default admin user on first startup.
@@ -155,15 +155,27 @@ function signToken(user) {
 }
 
 /**
- * Express middleware that validates the `Authorization: Bearer <token>` header.
- * Attaches the decoded payload to `req.user` if valid.
- * Returns HTTP 401 if the token is missing or invalid.
+ * Express middleware that validates incoming requests from either:
+ *  a) A browser dashboard user   → `Authorization: Bearer <jwt>`
+ *  b) A hardware device (ESP32)  → `X-Device-Key: <static-key>`
  *
- * @param {express.Request}  req
- * @param {express.Response} res
- * @param {express.NextFunction} next
+ * Attaches `req.user` when a JWT is verified.
+ * Returns HTTP 401 if neither credential is valid.
  */
 function requireAuth(req, res, next) {
+  // ── Device key fast-path (ESP32, Python scripts, etc.) ──────────────────
+  const deviceKey = req.headers["x-device-key"];
+  if (deviceKey) {
+    if (deviceKey === process.env.DEVICE_API_KEY) {
+      req.user = { sub: 0, username: "device", role: "device" };
+      return next();
+    }
+    return res
+      .status(401)
+      .json({ status: "error", message: "Unauthorized — invalid device key" });
+  }
+
+  // ── JWT path (browser dashboard) ─────────────────────────────────────────
   const authHeader = req.headers["authorization"];
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
@@ -185,9 +197,11 @@ function requireAuth(req, res, next) {
 
 /**
  * Fill level at which a "full" event is recorded (0–100 %).
+ * Derived from alert distance: ((maxHeight − alertDist) / maxHeight) × 100
+ * = ((25 − 10) / 25) × 100 = 60 %
  * A bin must rise ABOVE this value coming from a post-empty state.
  */
-const FULL_THRESHOLD = 80;
+const FULL_THRESHOLD = 60;
 
 /**
  * Fill level below which a bin is considered "emptied".
