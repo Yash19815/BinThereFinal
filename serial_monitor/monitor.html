@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BinThere — Monitor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #000000;
+    --surface:   #0a0a0a;
+    --border:    #2a2a2a;
+    --accent:    #58a6ff;
+    --accent2:   #3fb950;
+    --danger:    #ff6b6b;
+    --warn:      #ffd700;
+    --muted:     #aaaaaa;
+    --text:      #ffffff;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius:    10px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+  }
+
+  /* LOGIN SCREEN */
+  #loginScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: var(--bg);
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+  }
+
+  .login-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .login-logo .icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+
+  .login-logo h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .login-logo p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .login-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: block;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .login-input-wrap {
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  .login-input-wrap input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 15px;
+    font-family: var(--font-mono);
+    padding: 12px 44px 12px 14px;
+    outline: none;
+    transition: border-color .2s;
+    letter-spacing: 2px;
+  }
+
+  .login-input-wrap input:focus {
+    border-color: var(--accent);
+  }
+
+  .toggle-pw {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 16px; padding: 4px;
+    transition: color .2s;
+  }
+
+  .toggle-pw:hover { color: var(--text); }
+
+  .login-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000000;
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    letter-spacing: 0.3px;
+  }
+
+  .login-btn:hover  { opacity: .88; }
+  .login-btn:active { transform: scale(.98); }
+
+  .login-error {
+    display: none;
+    margin-top: 14px;
+    background: rgba(255,107,107,.12);
+    border: 1px solid rgba(255,107,107,.35);
+    border-radius: var(--radius);
+    color: var(--danger);
+    font-size: 13px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+
+  .shake { animation: shake .4s ease; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-8px); }
+    40%      { transform: translateX(8px); }
+    60%      { transform: translateX(-5px); }
+    80%      { transform: translateX(5px); }
+  }
+
+  /* MONITOR SCREEN */
+  #monitorScreen {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 16px;
+  }
+
+  .topbar-left {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .topbar-icon {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .topbar h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+
+  .topbar-right {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+    transition: all .3s;
+    min-width: 100px;
+  }
+
+  .status-pill .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background .3s;
+    flex-shrink: 0;
+  }
+
+  .status-pill.connected {
+    border-color: rgba(63,185,80,.4);
+    color: var(--accent2);
+  }
+
+  .status-pill.connected .dot {
+    background: var(--accent2);
+    box-shadow: 0 0 6px var(--accent2);
+    animation: pulse 2s infinite;
+  }
+
+  .status-pill.disconnected {
+    border-color: rgba(255,107,107,.4);
+    color: var(--danger);
+  }
+
+  .status-pill.disconnected .dot {
+    background: var(--danger);
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: .4; }
+  }
+
+  .btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn:hover        { border-color: var(--accent); color: var(--accent); }
+  .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* TERMINAL — change these two sizes as you like */
+  #terminal {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    font-size: 20px;   /* ← adjust here */
+    line-height: 1.5;
+    background: var(--bg);
+  }
+
+  #terminal::-webkit-scrollbar { width: 6px; }
+  #terminal::-webkit-scrollbar-track { background: transparent; }
+  #terminal::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
+  .log-line { display: flex; gap: 10px; }
+
+  .log-ts {
+    color: #ffffff;
+    flex-shrink: 0;
+    user-select: none;
+    font-size: 24px;   /* ← and here (timestamp) */
+    padding-top: 1px;
+  }
+
+  /* Log colours */
+  .log-line          .log-msg { color: #ffffff;  }
+  .log-line.tof      .log-msg { color: #79c0ff;  }
+  .log-line.ultra    .log-msg { color: #c9e8ff;  }
+  .log-line.mg995    .log-msg { color: #56d364;  }
+  .log-line.sg90     .log-msg { color: #d2a8ff;  }
+  .log-line.soil     .log-msg { color: #ffb347;  }
+  .log-line.wifi     .log-msg { color: #cccccc;  }
+  .log-line.post     .log-msg { color: #56d364;  }
+  .log-line.error    .log-msg { color: #ff6b6b;  }
+  .log-line.power    .log-msg { color: #ffd700;  }
+  .log-line.boot     .log-msg { color: #ffd700;  }
+  .log-line.cycle    .log-msg { color: #56d364;  }
+  .log-line.wsmon    .log-msg { color: #aaaaaa;  }
+
+  .statusbar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 6px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .statusbar-left { display: flex; gap: 18px; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">
+      <div class="icon">🗑</div>
+      <div>
+        <h1>BinThere</h1>
+        <p>Serial Monitor — Restricted Access</p>
+      </div>
+    </div>
+
+    <label class="login-label" for="pwInput">Password</label>
+    <div class="login-input-wrap">
+      <input type="password" id="pwInput"
+             placeholder="Enter password"
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doLogin()"/>
+      <button class="toggle-pw" onclick="togglePw()" title="Show/hide">👁</button>
+    </div>
+
+    <button class="login-btn" onclick="doLogin()">Unlock Monitor</button>
+    <div class="login-error" id="loginError">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<div id="monitorScreen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-icon">🗑</div>
+      <h1>BinThere — Serial Monitor</h1>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill disconnected" id="statusPill">
+        <div class="dot"></div>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <button class="btn" onclick="toggleScroll()">
+        <span id="scrollIcon">⏬</span>
+        <span id="scrollLabel">Auto</span>
+      </button>
+      <button class="btn" onclick="copyLogs()">📋 Copy</button>
+      <button class="btn danger" onclick="clearLogs()">🗑 Clear</button>
+      <button class="btn danger" onclick="doLogout()">🔒 Lock</button>
+    </div>
+  </div>
+
+  <div id="terminal"></div>
+
+  <div class="statusbar">
+    <div class="statusbar-left">
+      <span>Lines: <b id="lineCount">0</b></span>
+      <span>Dropped: <b id="dropCount">0</b></span>
+    </div>
+    <span id="lastSeen">—</span>
+  </div>
+</div>
+
+<script>
+  const CORRECT_PW  = "your_password_here";  // change this
+  const SESSION_KEY = "bt_auth";
+  const MAX_LINES   = 600;
+
+  let ws         = null;
+  let lineCount  = 0;
+  let dropCount  = 0;
+  let autoScroll = true;
+  let logBuffer  = "";
+
+  function doLogin() {
+    const val = document.getElementById("pwInput").value;
+    if (val === CORRECT_PW) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      showMonitor();
+    } else {
+      const card = document.getElementById("loginCard");
+      const err  = document.getElementById("loginError");
+      err.style.display = "block";
+      card.classList.remove("shake");
+      void card.offsetWidth;
+      card.classList.add("shake");
+      document.getElementById("pwInput").value = "";
+      document.getElementById("pwInput").focus();
+    }
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    if (ws) ws.close();
+    document.getElementById("monitorScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display   = "flex";
+    document.getElementById("pwInput").value = "";
+    document.getElementById("loginError").style.display = "none";
+  }
+
+  function togglePw() {
+    const inp = document.getElementById("pwInput");
+    inp.type = inp.type === "password" ? "text" : "password";
+  }
+
+  function showMonitor() {
+    document.getElementById("loginScreen").style.display   = "none";
+    document.getElementById("monitorScreen").style.display = "flex";
+    connectWS();
+  }
+
+  if (sessionStorage.getItem(SESSION_KEY) === "1") {
+    document.getElementById("loginScreen").style.display   = "none";
+    document.getElementById("monitorScreen").style.display = "flex";
+    connectWS();
+  }
+
+  function connectWS() {
+    const host = location.hostname;
+    ws = new WebSocket("ws://" + host + "/ws");
+
+    ws.onopen = () => setStatus(true);
+
+    ws.onmessage = (e) => {
+      logBuffer += e.data;
+      let nl;
+      while ((nl = logBuffer.indexOf("\n")) !== -1) {
+        const line = logBuffer.slice(0, nl);
+        logBuffer  = logBuffer.slice(nl + 1);
+        if (line.trim().length > 0) appendLine(line);
+      }
+    };
+
+    ws.onclose = () => {
+      setStatus(false);
+      setTimeout(connectWS, 3000);
+    };
+
+    ws.onerror = () => ws.close();
+  }
+
+  function tagClass(line) {
+    const l = line.toUpperCase();
+    if (l.includes("[TOF]"))       return "tof";
+    if (l.includes("[ULTRA]"))     return "ultra";
+    if (l.includes("[MG995]"))     return "mg995";
+    if (l.includes("[SG90]"))      return "sg90";
+    if (l.includes("[SOIL]"))      return "soil";
+    if (l.includes("[WIFI]"))      return "wifi";
+    if (l.includes("[POST]") ||
+        l.includes("[RETRY]"))     return "post";
+    if (l.includes("[ERROR]"))     return "error";
+    if (l.includes("[POWER]"))     return "power";
+    if (l.includes("[BOOT]") ||
+        l.includes("[NVS]"))       return "boot";
+    if (l.includes("[CYCLE]") ||
+        l.includes("[MICROWAVE]")) return "cycle";
+    if (l.includes("[WSMON]"))     return "wsmon";
+    return "";
+  }
+
+  function appendLine(text) {
+    const term = document.getElementById("terminal");
+
+    if (lineCount >= MAX_LINES) {
+      term.removeChild(term.firstChild);
+      dropCount++;
+      document.getElementById("dropCount").textContent = dropCount;
+    }
+
+    const now = new Date();
+    const ts  = now.toLocaleTimeString("en-GB", { hour12: false });
+
+    const div = document.createElement("div");
+    div.className = "log-line " + tagClass(text);
+
+    const tsEl = document.createElement("span");
+    tsEl.className   = "log-ts";
+    tsEl.textContent = ts;
+
+    const msg = document.createElement("span");
+    msg.className   = "log-msg";
+    msg.textContent = text;
+
+    div.appendChild(tsEl);
+    div.appendChild(msg);
+    term.appendChild(div);
+
+    lineCount++;
+    document.getElementById("lineCount").textContent = lineCount;
+    document.getElementById("lastSeen").textContent  = "Last message: " + ts;
+
+    if (autoScroll) term.scrollTop = term.scrollHeight;
+  }
+
+  // Add this for dummy lorem logs
+  function demoLogs() {
+    const samples = [
+      "[BOOT] Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "[TOF] Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "[ULTRA] Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
+      "[MG995] Duis aute irure dolor in reprehenderit in voluptate velit esse.",
+      "[SOIL] Cillum dolore eu fugiat nulla pariatur.",
+      "[CYCLE] Excepteur sint occaecat cupidatat non proident."
+    ];
+    samples.forEach(t => appendLine(t));
+  }
+
+  // Call once on load to prefill terminal
+  window.addEventListener("load", () => {
+    demoLogs();
+  });
+</script>
+</body>
+</html>
