@@ -40,3 +40,7 @@ Thumbs.db
 .idea/
 *.suo
 *.user
+.venv
+results.json
+received_images
+__pycache__/
