@@ -7,15 +7,16 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 
-# ─── Load .env from the same directory as this script ────────────────────────
+# ─── Load .env ────────────────────────────────────────────────────────────────
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 # ─── Configuration ────────────────────────────────────────────────────────────
-ENDPOINT_URL = os.getenv("CLOUD_API_URL")
-API_KEY      = os.getenv("API_KEY", "")
-TIMEOUT      = 30
-MAX_WORKERS  = 4
-SAVE_RESULTS = True
+ENDPOINT_URL   = os.getenv("CLOUD_API_URL")
+API_KEY        = os.getenv("API_KEY", "")
+TIMEOUT        = 30
+MAX_WORKERS    = 4
+SAVE_RESULTS   = True
+MOISTURE_DATA  = 2500          # dummy value — below 3000 = wet
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff", ".tif", ".gif"}
 MIME_TYPES = {
@@ -36,7 +37,6 @@ log = logging.getLogger(__name__)
 # ─── Core Functions ───────────────────────────────────────────────────────────
 
 def validate_config():
-    """Fail fast if required env vars are missing."""
     if not ENDPOINT_URL:
         log.error("CLOUD_API_URL is not set. Add it to your .env file.")
         sys.exit(1)
@@ -44,7 +44,6 @@ def validate_config():
 
 
 def get_images_in_script_dir() -> list[Path]:
-    """Return all image files in the same directory as this script."""
     script_dir = Path(__file__).resolve().parent
     images = [
         f for f in script_dir.iterdir()
@@ -54,7 +53,6 @@ def get_images_in_script_dir() -> list[Path]:
 
 
 def send_image(image_path: Path) -> dict:
-    """Send a single image to the endpoint and return the result."""
     mime = MIME_TYPES.get(image_path.suffix.lower(), "application/octet-stream")
     headers = {}
     if API_KEY:
@@ -62,10 +60,12 @@ def send_image(image_path: Path) -> dict:
 
     try:
         with open(image_path, "rb") as img_file:
-            files = {"file": (image_path.name, img_file, mime)}
+            files = {"image": (image_path.name, img_file, mime)}  # ← field name is "image"
+            data  = {"moisture_data": MOISTURE_DATA}               # ← required number field
             response = requests.post(
                 ENDPOINT_URL,
                 files=files,
+                data=data,
                 headers=headers,
                 timeout=TIMEOUT,
             )
