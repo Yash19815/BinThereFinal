@@ -1,48 +1,61 @@
 /**
  * ============================================================
- *  BinThere — Full IoT Pipeline v5.5
+ *  BinThere — Full IoT Pipeline v5.6
  *  ESP32 | Waste Classification System
  * ============================================================
- *  Changes in v5.5:
- *    [FIX] Added missing attachSG90()
- *    [FIX] Removed duplicate detachSG90()
- *    [FIX] Added Preferences include + loadAngles() + saveAngles()
+ *  Changes in v5.6:
+ *    [FEAT] Added ElegantOTA for wireless firmware updates
+ *           → Visit http://<ESP32-IP>:<WEB_SERIAL_PORT>/update
+ *           → NOTE: In ElegantOTA.h, set:
+ *                   #define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
  * ============================================================
  */
 
 #include <WiFi.h>
+
 #include <HTTPClient.h>
+
 #include <ESP32Servo.h>
+
 #include <Wire.h>
+
 #include <Adafruit_VL53L0X.h>
+
 #include "esp_task_wdt.h"
+
 #include <ESPAsyncWebServer.h>
+
 #include <Preferences.h>
+
 #include <stdarg.h>
 
+#include <ElegantOTA.h>      // ← v5.6: OTA support
+
+
 #include "config.h"
+
 #include "webpage.h"
-#define WS_QUEUE_SIZE   20
-#define WS_MSG_LEN      256
+
+#define WS_QUEUE_SIZE 20
+#define WS_MSG_LEN 256
 QueueHandle_t wsQueue;
 
 // ── Objects ───────────────────────────────────────────────────
-Servo             mg995;
-Servo             sg90;
-Adafruit_VL53L0X  tof = Adafruit_VL53L0X();
-Preferences       prefs;
+Servo mg995;
+Servo sg90;
+Adafruit_VL53L0X tof = Adafruit_VL53L0X();
+Preferences prefs;
 
-AsyncWebServer    webSerial(WEB_SERIAL_PORT);
-AsyncWebSocket    wsLog(WS_PATH);
+AsyncWebServer webSerial(WEB_SERIAL_PORT);
+AsyncWebSocket wsLog(WS_PATH);
 
 // ── State ─────────────────────────────────────────────────────
-volatile bool     sg90Moving     = false;
-int               mg995Angle     = MG995_REST_ANGLE;
-int               sg90Angle      = SG90_REST_ANGLE;
-bool              tofInitialized = false;
+volatile bool sg90Moving = false;
+int mg995Angle = MG995_REST_ANGLE;
+int sg90Angle = SG90_REST_ANGLE;
+bool tofInitialized = false;
 SemaphoreHandle_t wifiMutex;
 SemaphoreHandle_t wsMutex;
-
 
 // =============================================================================
 //  NVS — save/load servo angles across reboots
@@ -51,46 +64,43 @@ SemaphoreHandle_t wsMutex;
 void saveAngles() {
   prefs.begin("servos", false);
   prefs.putInt("mg995", mg995Angle);
-  prefs.putInt("sg90",  sg90Angle);
+  prefs.putInt("sg90", sg90Angle);
   prefs.end();
   Serial.printf("[NVS] Saved — MG995: %d° | SG90: %d°\n",
-                mg995Angle, sg90Angle);
+    mg995Angle, sg90Angle);
 }
 
 void loadAngles() {
   prefs.begin("servos", true);
   mg995Angle = prefs.getInt("mg995", MG995_REST_ANGLE);
-  sg90Angle  = prefs.getInt("sg90",  SG90_REST_ANGLE);
+  sg90Angle = prefs.getInt("sg90", SG90_REST_ANGLE);
   prefs.end();
   Serial.printf("[NVS] Loaded — MG995: %d° | SG90: %d°\n",
-                mg995Angle, sg90Angle);
+    mg995Angle, sg90Angle);
 }
-
 
 // =============================================================================
 //  LOGGING
 // =============================================================================
 
-void blog(const char* msg) {
+void blog(const char * msg) {
   Serial.print(msg);
 
   if (xPortGetCoreID() == 1) {
-    // Core 1 — send directly to WebSocket (thread-safe here)
     if (xSemaphoreTake(wsMutex, pdMS_TO_TICKS(50)) == pdTRUE) {
       if (wsLog.count() > 0) wsLog.textAll(msg);
       xSemaphoreGive(wsMutex);
     }
   } else {
-    // Core 0 — post to queue, Core 1 will drain and send
     if (wsQueue != NULL) {
       char buf[WS_MSG_LEN];
       strncpy(buf, msg, WS_MSG_LEN - 1);
       buf[WS_MSG_LEN - 1] = '\0';
-      xQueueSend(wsQueue, buf, 0);   // non-blocking, drop if full
+      xQueueSend(wsQueue, buf, 0);
     }
   }
 }
-void blogf(const char* fmt, ...) {
+void blogf(const char * fmt, ...) {
   char buf[256];
   va_list args;
   va_start(args, fmt);
@@ -99,23 +109,21 @@ void blogf(const char* fmt, ...) {
   blog(buf);
 }
 
-
 // =============================================================================
 //  WEBSOCKET EVENT HANDLER
 // =============================================================================
 
-void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
-               AwsEventType type, void* arg, uint8_t* data, size_t len) {
+void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client,
+  AwsEventType type, void * arg, uint8_t * data, size_t len) {
   if (type == WS_EVT_CONNECT) {
     blogf("[WSMON] Client #%u connected from %s\n",
-          client->id(), client->remoteIP().toString().c_str());
+      client -> id(), client -> remoteIP().toString().c_str());
   } else if (type == WS_EVT_DISCONNECT) {
-    blogf("[WSMON] Client #%u disconnected\n", client->id());
+    blogf("[WSMON] Client #%u disconnected\n", client -> id());
   } else if (type == WS_EVT_ERROR) {
-    blogf("[WSMON] Client #%u error\n", client->id());
+    blogf("[WSMON] Client #%u error\n", client -> id());
   }
 }
-
 
 // =============================================================================
 //  SERVO HELPERS
@@ -147,7 +155,6 @@ void detachSG90() {
   digitalWrite(SG90_PIN, LOW);
 }
 
-
 // =============================================================================
 //  WIFI
 // =============================================================================
@@ -164,21 +171,21 @@ void reconnectWiFi() {
   blog("\n");
 }
 
-
 // =============================================================================
 //  DASHBOARD POST
 // =============================================================================
 
-void sendToServer(float distCm, const char* compartment) {
+void sendToServer(float distCm,
+  const char * compartment) {
   if (xSemaphoreTake(wifiMutex, pdMS_TO_TICKS(3000)) != pdTRUE) return;
 
   reconnectWiFi();
 
-  String url = String("http://") + SERVER_IP + ":" + SERVER_PORT
-               + "/api/bins/1/measurement";
+  String url = String("http://") + SERVER_IP + ":" + SERVER_PORT +
+    "/api/bins/1/measurement";
 
-  String payload = "{\"raw_distance_cm\":" + String(distCm, 2)
-                   + ",\"compartment\":\"" + compartment + "\"}";
+  String payload = "{\"raw_distance_cm\":" + String(distCm, 2) +
+    ",\"compartment\":\"" + compartment + "\"}";
 
   bool success = false;
 
@@ -190,9 +197,8 @@ void sendToServer(float distCm, const char* compartment) {
     http.setTimeout(HTTP_TIMEOUT_MS);
 
     blogf("[POST] Attempt %d/%d → %s\n",
-          attempt, HTTP_MAX_RETRIES, payload.c_str());
+      attempt, HTTP_MAX_RETRIES, payload.c_str());
 
-    // ❌ removed esp_task_wdt_reset() — ultrasonicTask is not WDT registered
     int code = http.POST(payload);
 
     if (code == 200 || code == 201) {
@@ -202,10 +208,9 @@ void sendToServer(float distCm, const char* compartment) {
       blogf("[POST] HTTP %d (unexpected)\n", code);
     } else {
       blogf("[ERROR] Attempt %d failed: %s\n",
-            attempt, http.errorToString(code).c_str());
+        attempt, http.errorToString(code).c_str());
       if (attempt < HTTP_MAX_RETRIES) {
         blogf("[RETRY] Waiting %dms...\n", HTTP_RETRY_DELAY_MS);
-        // ❌ removed esp_task_wdt_reset() here too
         delay(HTTP_RETRY_DELAY_MS);
         reconnectWiFi();
       }
@@ -222,14 +227,16 @@ void sendToServer(float distCm, const char* compartment) {
 // =============================================================================
 
 float getDistance(int trig, int echo) {
-  digitalWrite(trig, LOW);  delayMicroseconds(2);
-  digitalWrite(trig, HIGH); delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trig, HIGH);
+  delayMicroseconds(10);
   digitalWrite(trig, LOW);
   long dur = pulseIn(echo, HIGH, 30000);
-  return (dur == 0) ? 0.0f : dur * 0.034f / 2.0f;
+  return (dur == 0) ? 0.0 f : dur * 0.034 f / 2.0 f;
 }
 
-void ultrasonicTask(void* param) {
+void ultrasonicTask(void * param) {
   for (;;) {
     if (!sg90Moving) {
       float dry = getDistance(TRIG_DRY, ECHO_DRY);
@@ -244,21 +251,19 @@ void ultrasonicTask(void* param) {
   }
 }
 
-
 // =============================================================================
-//  VL53L0X TOF — reads for TOF_SAMPLE_DURATION_MS, logs every reading
+//  VL53L0X TOF
 // =============================================================================
 
 bool wakeTOF() {
   if (!tofInitialized) {
     Wire.begin(VL53_SDA, VL53_SCL);
     if (!tof.begin()) {
-      blog("[TOF] Init failed!\n"); return false;
+      blog("[TOF] Init failed!\n");
+      return false;
     }
-    // HIGH_ACCURACY is far more reliable indoors at <1m
-    // LONG_RANGE is only for pitch-dark environments
     tof.configSensor(Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_ACCURACY);
-    tof.setMeasurementTimingBudgetMicroSeconds(500000);  // 500ms budget
+    tof.setMeasurementTimingBudgetMicroSeconds(500000);
     tofInitialized = true;
   }
   blog("[TOF] Sensor ready.\n");
@@ -270,26 +275,23 @@ void sleepTOF() {
 
 float readTOFForDuration() {
   VL53L0X_RangingMeasurementData_t measure;
-  float         sum        = 0;
-  int           validCount = 0;
-  int           readCount  = 0;
-  unsigned long startMs    = millis();
+  float sum = 0;
+  int validCount = 0;
+  int readCount = 0;
+  unsigned long startMs = millis();
 
   blogf("[TOF] Sampling for %d ms...\n", TOF_SAMPLE_DURATION_MS);
 
   while (millis() - startMs < TOF_SAMPLE_DURATION_MS) {
     esp_task_wdt_reset();
-    tof.rangingTest(&measure, false);
+    tof.rangingTest( & measure, false);
     readCount++;
 
-    float cm = measure.RangeMilliMeter / 10.0f;
+    float cm = measure.RangeMilliMeter / 10.0 f;
 
-    // RangeStatus != 0 = bad signal
-    // cm >= 819 = 8190mm phantom "no target" value, status can still be 0
-    // cm < 2 = too close / noise floor
-    if (measure.RangeStatus != 0 || cm >= 819.0f || cm < 2.0f) {
+    if (measure.RangeStatus != 0 || cm >= 819.0 f || cm < 2.0 f) {
       blogf("[TOF] Read %d: %.1f cm status=%d (rejected)\n",
-            readCount, cm, measure.RangeStatus);
+        readCount, cm, measure.RangeStatus);
     } else {
       blogf("[TOF] Read %d: %.1f cm (valid)\n", readCount, cm);
       sum += cm;
@@ -301,15 +303,14 @@ float readTOFForDuration() {
 
   if (validCount == 0) {
     blog("[TOF] No valid readings in sampling window.\n");
-    return -1.0f;
+    return -1.0 f;
   }
 
   float avg = sum / validCount;
   blogf("[TOF] Done — %d/%d valid. Average: %.1f cm\n",
-        validCount, readCount, avg);
+    validCount, readCount, avg);
   return avg;
 }
-
 
 // =============================================================================
 //  MG995 SERVO  (Lid)
@@ -318,13 +319,15 @@ float readTOFForDuration() {
 void mg995MoveTo(int target) {
   if (target > mg995Angle) {
     for (int a = mg995Angle; a <= target; a++) {
-      mg995.write(a); mg995Angle = a;
+      mg995.write(a);
+      mg995Angle = a;
       esp_task_wdt_reset();
       delay(MG995_SPEED_MS);
     }
   } else {
     for (int a = mg995Angle; a >= target; a--) {
-      mg995.write(a); mg995Angle = a;
+      mg995.write(a);
+      mg995Angle = a;
       esp_task_wdt_reset();
       delay(MG995_SPEED_MS);
     }
@@ -353,7 +356,6 @@ void openAndCloseLid() {
   blog("[MG995] Lid fully closed. Signal cut.\n");
 }
 
-
 // =============================================================================
 //  SG90 SERVO  (Chute)
 // =============================================================================
@@ -363,13 +365,15 @@ void sg90MoveTo(int target) {
   sg90Moving = true;
   if (target > sg90Angle) {
     for (int a = sg90Angle; a <= target; a++) {
-      sg90.write(a); sg90Angle = a;
+      sg90.write(a);
+      sg90Angle = a;
       esp_task_wdt_reset();
       delay(SG90_MOVE_SPEED_MS);
     }
   } else {
     for (int a = sg90Angle; a >= target; a--) {
-      sg90.write(a); sg90Angle = a;
+      sg90.write(a);
+      sg90Angle = a;
       esp_task_wdt_reset();
       delay(SG90_MOVE_SPEED_MS);
     }
@@ -391,9 +395,8 @@ void routeWaste(bool isDry) {
   blog("[SG90] Back at centre. Signal cut.\n");
 }
 
-
 // =============================================================================
-//  SOIL MOISTURE — reads after lid fully closed
+//  SOIL MOISTURE
 // =============================================================================
 
 bool classifySoil() {
@@ -412,13 +415,12 @@ bool classifySoil() {
   }
 
   digitalWrite(SOIL_POWER_PIN, LOW);
-  float avg = sum / (float)SOIL_SAMPLES;
-  bool  dry = avg > SOIL_DRY_THRESHOLD;
+  float avg = sum / (float) SOIL_SAMPLES;
+  bool dry = avg > SOIL_DRY_THRESHOLD;
   blogf("[SOIL] Average ADC: %.0f | Threshold: %d | Result: %s\n",
-        avg, SOIL_DRY_THRESHOLD, dry ? "DRY" : "WET");
+    avg, SOIL_DRY_THRESHOLD, dry ? "DRY" : "WET");
   return dry;
 }
-
 
 // =============================================================================
 //  POWER MANAGEMENT
@@ -428,10 +430,9 @@ void standby() {
   digitalWrite(SOIL_POWER_PIN, LOW);
   sleepTOF();
   if (mg995.attached()) detachMG995();
-  if (sg90.attached())  detachSG90();
+  if (sg90.attached()) detachSG90();
   blog("[POWER] Standby — Microwave + Ultrasonics active.\n\n");
 }
-
 
 // =============================================================================
 //  SETUP
@@ -440,20 +441,23 @@ void standby() {
 void setup() {
   Serial.begin(115200);
   Serial.println("\n========================================");
-  Serial.println("  BinThere ESP32 v5.5 — Booting");
+  Serial.println("  BinThere ESP32 v5.6 — Booting");
   Serial.println("========================================\n");
 
   esp_task_wdt_add(NULL);
 
   // ── GPIO ──────────────────────────────────────────────────────
-  pinMode(MICROWAVE_PIN,  INPUT);
-  pinMode(TRIG_DRY,       OUTPUT);
-  pinMode(ECHO_DRY,       INPUT);
-  pinMode(TRIG_WET,       OUTPUT);
-  pinMode(ECHO_WET,       INPUT);
-  pinMode(SOIL_POWER_PIN, OUTPUT); digitalWrite(SOIL_POWER_PIN, LOW);
-  pinMode(MG995_PIN,      OUTPUT); digitalWrite(MG995_PIN,      LOW);
-  pinMode(SG90_PIN,       OUTPUT); digitalWrite(SG90_PIN,       LOW);
+  pinMode(MICROWAVE_PIN, INPUT);
+  pinMode(TRIG_DRY, OUTPUT);
+  pinMode(ECHO_DRY, INPUT);
+  pinMode(TRIG_WET, OUTPUT);
+  pinMode(ECHO_WET, INPUT);
+  pinMode(SOIL_POWER_PIN, OUTPUT);
+  digitalWrite(SOIL_POWER_PIN, LOW);
+  pinMode(MG995_PIN, OUTPUT);
+  digitalWrite(MG995_PIN, LOW);
+  pinMode(SG90_PIN, OUTPUT);
+  digitalWrite(SG90_PIN, LOW);
 
   ESP32PWM::allocateTimer(0);
   ESP32PWM::allocateTimer(1);
@@ -464,20 +468,20 @@ void setup() {
   loadAngles();
 
   Serial.printf("[BOOT] MG995 last known: %d° → homing to %d°\n",
-                mg995Angle, MG995_REST_ANGLE);
+    mg995Angle, MG995_REST_ANGLE);
   attachMG995();
   mg995MoveTo(MG995_REST_ANGLE);
   detachMG995();
   Serial.println("[BOOT] MG995 at rest. Signal cut.");
 
   Serial.printf("[BOOT] SG90 last known: %d° → homing to %d°\n",
-                sg90Angle, SG90_REST_ANGLE);
+    sg90Angle, SG90_REST_ANGLE);
   attachSG90();
   sg90MoveTo(SG90_REST_ANGLE);
   detachSG90();
   Serial.println("[BOOT] SG90 at rest. Signal cut.\n");
 
-  saveAngles();   // save once — both confirmed at rest
+  saveAngles();
 
   // ── WiFi ──────────────────────────────────────────────────────
   Serial.printf("[WiFi] Connecting to %s", WIFI_SSID);
@@ -489,20 +493,30 @@ void setup() {
   }
   Serial.println();
   Serial.printf("[WiFi] Connected — IP: %s\n",
-                WiFi.localIP().toString().c_str());
+    WiFi.localIP().toString().c_str());
 
   wifiMutex = xSemaphoreCreateMutex();
-  wsMutex   = xSemaphoreCreateMutex();
-  wsQueue   = xQueueCreate(WS_QUEUE_SIZE, WS_MSG_LEN);
+  wsMutex = xSemaphoreCreateMutex();
+  wsQueue = xQueueCreate(WS_QUEUE_SIZE, WS_MSG_LEN);
 
+  // ── WebSocket Monitor ─────────────────────────────────────────
   wsLog.onEvent(onWsEvent);
-  webSerial.addHandler(&wsLog);
-  webSerial.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
-    req->send_P(200, "text/html", WS_MONITOR_HTML);
+  webSerial.addHandler( & wsLog);
+  webSerial.on("/", HTTP_GET, [](AsyncWebServerRequest * req) {
+    req -> send_P(200, "text/html", WS_MONITOR_HTML);
   });
+
+  // ── ElegantOTA — attach to existing server ────────────────────
+  // v5.6: Enables wireless firmware updates via browser
+  // Prerequisite (one-time): In ElegantOTA.h, set:
+  //   #define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
+  ElegantOTA.begin( & webSerial);
+
   webSerial.begin();
-  Serial.printf("[WSMON] Web Serial Monitor → http://%s/\n",
-                WiFi.localIP().toString().c_str());
+  Serial.printf("[WSMON] Web Serial Monitor → http://%s:%d/\n",
+    WiFi.localIP().toString().c_str(), WEB_SERIAL_PORT);
+  Serial.printf("[OTA]   Firmware Update Page → http://%s:%d/update\n",
+    WiFi.localIP().toString().c_str(), WEB_SERIAL_PORT);
 
   xTaskCreatePinnedToCore(
     ultrasonicTask, "UltrasonicTask",
@@ -510,10 +524,9 @@ void setup() {
   );
 
   standby();
-  blogf("[BOOT] Ready. Open http://%s/ in your browser.\n\n",
-        WiFi.localIP().toString().c_str());
+  blogf("[BOOT] Ready. Open http://%s:%d/ in your browser.\n\n",
+    WiFi.localIP().toString().c_str(), WEB_SERIAL_PORT);
 }
-
 
 // =============================================================================
 //  MAIN LOOP  (Core 1)
@@ -521,6 +534,7 @@ void setup() {
 
 void loop() {
   esp_task_wdt_reset();
+  ElegantOTA.loop(); // ← v5.6: handles OTA progress & triggers reboot
   wsLog.cleanupClients();
 
   char qMsg[WS_MSG_LEN];
@@ -563,7 +577,7 @@ void loop() {
 
   routeWaste(isDry);
 
-  saveAngles();   // both servos back at REST — safe to persist now
+  saveAngles();
 
   standby();
   blog("[CYCLE] Complete. Resuming motion monitoring...\n\n");
