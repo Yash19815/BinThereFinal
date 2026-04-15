@@ -233,7 +233,7 @@ float getDistance(int trig, int echo) {
   delayMicroseconds(10);
   digitalWrite(trig, LOW);
   long dur = pulseIn(echo, HIGH, 30000);
-  return (dur == 0) ? 0.0 f : dur * 0.034 f / 2.0 f;
+  return (dur == 0) ? 0.0f : dur * 0.034f / 2.0f;
 }
 
 void ultrasonicTask(void * param) {
@@ -287,9 +287,9 @@ float readTOFForDuration() {
     tof.rangingTest( & measure, false);
     readCount++;
 
-    float cm = measure.RangeMilliMeter / 10.0 f;
+    float cm = measure.RangeMilliMeter / 10.0f;
 
-    if (measure.RangeStatus != 0 || cm >= 819.0 f || cm < 2.0 f) {
+    if (measure.RangeStatus != 0 || cm >= 819.0f || cm < 2.0f) {
       blogf("[TOF] Read %d: %.1f cm status=%d (rejected)\n",
         readCount, cm, measure.RangeStatus);
     } else {
@@ -303,7 +303,7 @@ float readTOFForDuration() {
 
   if (validCount == 0) {
     blog("[TOF] No valid readings in sampling window.\n");
-    return -1.0 f;
+    return -1.0f;
   }
 
   float avg = sum / validCount;
