@@ -30,11 +30,15 @@ import LoginPage from "./LoginPage.jsx";
 import ExportToExcel from "./components/ExportToExcel";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const WS_URL =
-  import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3001`;
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-const ALERT_THRESHOLD = 80; // % — show notification
+// Detect the current host (e.g., 192.168.1.8 or localhost)
+const CURRENT_HOST = window.location.hostname;
 
+// Prioritize .env values, otherwise use the auto-detected host
+const WS_URL = `ws://${CURRENT_HOST}:3001` || import.meta.env.VITE_WS_URL;
+
+const API_URL = `http://${CURRENT_HOST}:3001` || import.meta.env.VITE_API_URL;
+
+const ALERT_THRESHOLD = 80; // % — show notification
 /**
  * Returns the common auth headers to attach to every API fetch.
  * @param {string|null} token - JWT token from AuthContext

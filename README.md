@@ -21,7 +21,10 @@ A real-time web dashboard for monitoring dustbin fill levels via ESP32 ultrasoni
 - **Analytics chart** — Daily fill-cycle trend graph (7 / 14 / 30 day range)
 - **Excel export** — Downloads Bins, Measurements, Fill Cycles, and Summary in IST with optional date-range filtering
 - **Toast notifications** — Login, logout, and error feedback via react-hot-toast
-- **Dark mode** — Toggle in the profile dropdown, persisted across sessions
+- **Intelligent detection** — Automatically detects your PC's IP address for seamless ESP32 and mobile testing
+- **Dynamic dark mode** — Real-time HSL color palette switching for charts and heatmaps
+- **Peak Fill Hours Heatmap** — 7x24 matrix visualizing average fill cycles per compartment
+- **Linear data visualization** — Accurate trend lines in Analytics and History charts
 - **Daily Data Purge** — Automatically deletes measurements older than 1 year to keep the database lean
 - **Advanced Development Tools** — Built-in serial monitor and OTA update utility for hardware management
 - **No hardware required to test** — included PowerShell simulation script
@@ -80,6 +83,8 @@ This starts:
 
 - **Backend** on `http://localhost:3001`
 - **Frontend** on `http://localhost:5173`
+
+> **💡 Smart Host Detection:** The app automatically replaces `localhost` with your actual IP address (e.g., `192.168.1.5`) when you access it from another device on your network. This ensures the ESP32 and mobile browsers can always find the backend without manual config changes.
 
 Then open **http://localhost:5173** and log in with the default credentials:
 
@@ -411,8 +416,8 @@ node -e "import('better-sqlite3').then(({default:DB})=>{const db=new DB('./bins.
 
 ### File Structure
 
-- **`client/src/App.jsx`** — Main dashboard component, WebSocket handling, state management
-- **`client/src/AuthContext.jsx`** — Global authentication state (login/logout/token refresh)
+- **`client/src/App.jsx`** — Main dashboard, WebSocket client, Analytics charts, and Peak Hours Heatmap
+- **`client/src/AuthContext.jsx`** — Global auth state & dynamic API host resolution
 - **`client/src/LoginPage.jsx`** — Full-screen login form with error handling
 - **`client/src/components/ExportToExcel.jsx`** — Excel export UI component
 - **`server/server.js`** — Express server, WebSocket setup, API endpoints, database initialization
@@ -461,6 +466,8 @@ Create `.env` files in both `server/` and `client/` directories:
 **client/.env:**
 
 ```env
+# Optional: The app now auto-detects your hostname. 
+# Use these only if you need to hardcode a specific production domain.
 VITE_WS_URL=ws://localhost:3001
 VITE_API_URL=http://localhost:3001
 ```
