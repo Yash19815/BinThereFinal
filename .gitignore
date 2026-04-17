@@ -3,9 +3,18 @@
 .env.local
 .env.*.local
 # Arduino WiFi credentials — copy from config.h.example and fill in your own
-ESP32_SAMPLE/config.h
-# Keep example off remote (it contains sample credentials)
-ESP32_SAMPLE/config.h.example
+Final_code/config.h
+ota_check/config.h
+
+# ── Arduino / Build Artifacts ─────────────────────────────────
+*.ino.bin
+*.ino.elf
+*.ino.hex
+*.ino.map
+*.ino.partitions.bin
+*.ino.bootloader.bin
+build/
+bin/
 
 # ── Dependencies ──────────────────────────────────────────────
 node_modules/

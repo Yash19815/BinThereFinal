@@ -1,0 +1,465 @@
+#pragma once
+
+const char WS_MONITOR_HTML[] PROGMEM = R"rawhtml(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BinThere — Monitor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:        #000000;
+    --surface:   #0a0a0a;
+    --border:    #2a2a2a;
+    --accent:    #58a6ff;
+    --accent2:   #3fb950;
+    --danger:    #ff6b6b;
+    --warn:      #ffd700;
+    --muted:     #aaaaaa;
+    --text:      #ffffff;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius:    10px;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+
+  /* LOGIN */
+  #loginScreen { display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg); }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 8px 40px rgba(0,0,0,0.8); }
+  .login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .login-logo .icon { width: 42px; height: 42px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .login-logo h1 { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .login-logo p { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .login-label { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 8px; display: block; letter-spacing: 0.3px; text-transform: uppercase; }
+  .login-input-wrap { position: relative; margin-bottom: 20px; }
+  .login-input-wrap input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 15px; font-family: var(--font-mono); padding: 12px 44px 12px 14px; outline: none; transition: border-color .2s; letter-spacing: 2px; }
+  .login-input-wrap input:focus { border-color: var(--accent); }
+  .toggle-pw { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; transition: color .2s; }
+  .toggle-pw:hover { color: var(--text); }
+  .login-btn { width: 100%; background: var(--accent); color: #000000; border: none; border-radius: var(--radius); padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; letter-spacing: 0.3px; }
+  .login-btn:hover { opacity: .88; }
+  .login-btn:active { transform: scale(.98); }
+  .login-error { display: none; margin-top: 14px; background: rgba(255,107,107,.12); border: 1px solid rgba(255,107,107,.35); border-radius: var(--radius); color: var(--danger); font-size: 13px; padding: 10px 14px; text-align: center; }
+  .shake { animation: shake .4s ease; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+
+  /* MONITOR */
+  #monitorScreen { display: none; flex-direction: column; height: 100%; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 16px; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-icon { width: 30px; height: 30px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .topbar h1 { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .status-pill { display: flex; align-items: center; gap: 7px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.3px; transition: all .3s; min-width: 100px; }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background .3s; flex-shrink: 0; }
+  .status-pill.connected { border-color: rgba(63,185,80,.4); color: var(--accent2); }
+  .status-pill.connected .dot { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); animation: pulse 2s infinite; }
+  .status-pill.disconnected { border-color: rgba(255,107,107,.4); color: var(--danger); }
+  .status-pill.disconnected .dot { background: var(--danger); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+  .btn { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer; transition: all .2s; letter-spacing: 0.3px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+  .btn.ota-active { border-color: var(--warn); color: var(--warn); }
+
+  /* OTA PANEL */
+  #otaPanel { display: none; background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; flex-shrink: 0; gap: 12px; align-items: center; flex-wrap: wrap; animation: slideDown .2s ease; }
+  #otaPanel.open { display: flex; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .ota-label { font-size: 12px; font-weight: 700; color: var(--warn); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  .ota-file-wrap { position: relative; }
+  .ota-file-wrap input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .ota-file-btn { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer; transition: all .2s; letter-spacing: 0.3px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; white-space: nowrap; pointer-events: none; }
+  .ota-file-wrap:hover .ota-file-btn { border-color: var(--warn); color: var(--warn); }
+  #otaFileName { font-size: 12px; color: var(--muted); font-family: var(--font-mono); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #otaUploadBtn { background: var(--warn); color: #000; border: none; border-radius: var(--radius); padding: 6px 18px; font-size: 12px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; letter-spacing: 0.3px; text-transform: uppercase; white-space: nowrap; }
+  #otaUploadBtn:hover { opacity: .85; }
+  #otaUploadBtn:active { transform: scale(.97); }
+  #otaUploadBtn:disabled { opacity: .4; cursor: not-allowed; }
+  .ota-progress-wrap { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 160px; }
+  #otaBar { flex: 1; height: 6px; border-radius: 3px; appearance: none; background: var(--border); overflow: hidden; }
+  #otaBar::-webkit-progress-bar { background: var(--border); border-radius: 3px; }
+  #otaBar::-webkit-progress-value { background: var(--warn); border-radius: 3px; transition: width .1s; }
+  #otaBar::-moz-progress-bar { background: var(--warn); border-radius: 3px; }
+  #otaPct { font-size: 12px; font-family: var(--font-mono); color: var(--warn); min-width: 36px; text-align: right; }
+  #otaStatus { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  #otaStatus.ok { color: var(--accent2); }
+  #otaStatus.err { color: var(--danger); }
+  #otaStatus.busy { color: var(--warn); }
+
+  /* TERMINAL */
+  #terminal { flex: 1; overflow-y: auto; padding: 16px 20px; font-family: var(--font-mono); font-size: 20px; line-height: 1.5; background: var(--bg); }
+  #terminal::-webkit-scrollbar { width: 6px; }
+  #terminal::-webkit-scrollbar-track { background: transparent; }
+  #terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .log-line { display: flex; gap: 10px; }
+  .log-ts { color: #ffffff; flex-shrink: 0; user-select: none; font-size: 24px; padding-top: 1px; }
+  .log-line .log-msg { color: #ffffff; }
+  .log-line.tof .log-msg { color: #79c0ff; }
+  .log-line.ultra .log-msg { color: #c9e8ff; }
+  .log-line.mg995 .log-msg { color: #56d364; }
+  .log-line.sg90 .log-msg { color: #d2a8ff; }
+  .log-line.soil .log-msg { color: #ffb347; }
+  .log-line.wifi .log-msg { color: #cccccc; }
+  .log-line.post .log-msg { color: #56d364; }
+  .log-line.error .log-msg { color: #ff6b6b; }
+  .log-line.power .log-msg { color: #ffd700; }
+  .log-line.boot .log-msg { color: #ffd700; }
+  .log-line.cycle .log-msg { color: #56d364; }
+  .log-line.wsmon .log-msg { color: #aaaaaa; }
+
+  .statusbar { background: var(--surface); border-top: 1px solid var(--border); padding: 6px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .statusbar-left { display: flex; gap: 18px; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">
+      <div class="icon">&#x1F5D1;</div>
+      <div><h1>BinThere</h1><p>Serial Monitor &#8212; Restricted Access</p></div>
+    </div>
+    <label class="login-label" for="pwInput">Password</label>
+    <div class="login-input-wrap">
+      <input type="password" id="pwInput" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()"/>
+      <button class="toggle-pw" onclick="togglePw()" title="Show/hide">&#x1F441;</button>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Unlock Monitor</button>
+    <div class="login-error" id="loginError">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<div id="monitorScreen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-icon">&#x1F5D1;</div>
+      <h1>BinThere &#8212; Serial Monitor</h1>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill disconnected" id="statusPill">
+        <div class="dot"></div>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <button class="btn" onclick="toggleScroll()">
+        <span id="scrollIcon">&#x23EC;</span><span id="scrollLabel">Auto</span>
+      </button>
+      <button class="btn" onclick="copyLogs()">&#x1F4CB; Copy</button>
+      <button class="btn danger" onclick="clearLogs()">&#x1F5D1; Clear</button>
+      <button class="btn" id="otaToggleBtn" onclick="toggleOTA()">&#x2B06; OTA</button>
+      <button class="btn danger" onclick="doLogout()">&#x1F512; Lock</button>
+    </div>
+  </div>
+
+  <!-- OTA PANEL -->
+  <div id="otaPanel">
+    <span class="ota-label">&#x26A1; Firmware Update</span>
+    <div class="ota-file-wrap">
+      <input type="file" id="otaFile" accept=".bin" onchange="onFileSelected()"/>
+      <div class="ota-file-btn">&#x1F4C2; Choose .bin</div>
+    </div>
+    <span id="otaFileName" style="color:var(--muted)">No file selected</span>
+    <button id="otaUploadBtn" onclick="startOTA()" disabled>Upload &amp; Flash</button>
+    <div class="ota-progress-wrap">
+      <progress id="otaBar" value="0" max="100"></progress>
+      <span id="otaPct">0%</span>
+    </div>
+    <span id="otaStatus"></span>
+  </div>
+
+  <div id="terminal"></div>
+
+  <div class="statusbar">
+    <div class="statusbar-left">
+      <span>Lines: <b id="lineCount">0</b></span>
+      <span>Dropped: <b id="dropCount">0</b></span>
+    </div>
+    <span id="lastSeen">&#8212;</span>
+  </div>
+</div>
+
+<script>
+  const CORRECT_PW  = "binthere2026";
+  const SESSION_KEY = "bt_auth";
+  const MAX_LINES   = 600;
+  let ws = null, lineCount = 0, dropCount = 0, autoScroll = true, logBuffer = "";
+
+  function doLogin() {
+    const val = document.getElementById("pwInput").value;
+    if (val === CORRECT_PW) { sessionStorage.setItem(SESSION_KEY, "1"); showMonitor(); }
+    else {
+      const card = document.getElementById("loginCard");
+      document.getElementById("loginError").style.display = "block";
+      card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+      document.getElementById("pwInput").value = "";
+      document.getElementById("pwInput").focus();
+    }
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    if (ws) ws.close();
+    document.getElementById("monitorScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display   = "flex";
+    document.getElementById("pwInput").value = "";
+    document.getElementById("loginError").style.display = "none";
+  }
+
+  function togglePw() {
+    const inp = document.getElementById("pwInput");
+    inp.type = inp.type === "password" ? "text" : "password";
+  }
+
+  function showMonitor() {
+    document.getElementById("loginScreen").style.display   = "none";
+    document.getElementById("monitorScreen").style.display = "flex";
+    connectWS();
+  }
+
+  if (sessionStorage.getItem(SESSION_KEY) === "1") {
+    document.getElementById("loginScreen").style.display   = "none";
+    document.getElementById("monitorScreen").style.display = "flex";
+    connectWS();
+  }
+
+  function connectWS() {
+    ws = new WebSocket("ws://" + location.hostname + "/ws");
+    ws.onopen    = () => setStatus(true);
+    ws.onmessage = (e) => {
+      logBuffer += e.data;
+      let nl;
+      while ((nl = logBuffer.indexOf("\n")) !== -1) {
+        const line = logBuffer.slice(0, nl);
+        logBuffer  = logBuffer.slice(nl + 1);
+        if (line.trim().length > 0) appendLine(line);
+      }
+    };
+    ws.onclose = () => { setStatus(false); setTimeout(connectWS, 3000); };
+    ws.onerror = () => ws.close();
+  }
+
+  function tagClass(line) {
+    const l = line.toUpperCase();
+    if (l.includes("[TOF]"))                            return "tof";
+    if (l.includes("[ULTRA]"))                          return "ultra";
+    if (l.includes("[MG995]"))                          return "mg995";
+    if (l.includes("[SG90]"))                           return "sg90";
+    if (l.includes("[SOIL]"))                           return "soil";
+    if (l.includes("[WIFI]"))                           return "wifi";
+    if (l.includes("[POST]") || l.includes("[RETRY]")) return "post";
+    if (l.includes("[ERROR]"))                          return "error";
+    if (l.includes("[POWER]"))                          return "power";
+    if (l.includes("[BOOT]") || l.includes("[NVS]"))   return "boot";
+    if (l.includes("[CYCLE]") || l.includes("[MICROWAVE]")) return "cycle";
+    if (l.includes("[WSMON]"))                          return "wsmon";
+    return "";
+  }
+
+  function appendLine(text) {
+    const term = document.getElementById("terminal");
+    if (lineCount >= MAX_LINES) { term.removeChild(term.firstChild); dropCount++; document.getElementById("dropCount").textContent = dropCount; }
+    const ts  = new Date().toLocaleTimeString("en-GB", { hour12: false });
+    const div = document.createElement("div");
+    div.className = "log-line " + tagClass(text);
+    const tsEl = document.createElement("span"); tsEl.className = "log-ts"; tsEl.textContent = ts;
+    const msg  = document.createElement("span"); msg.className  = "log-msg"; msg.textContent  = text;
+    div.appendChild(tsEl); div.appendChild(msg); term.appendChild(div);
+    lineCount++;
+    document.getElementById("lineCount").textContent = lineCount;
+    document.getElementById("lastSeen").textContent  = "Last message: " + ts;
+    if (autoScroll) term.scrollTop = term.scrollHeight;
+  }
+
+  function clearLogs() {
+    document.getElementById("terminal").innerHTML = "";
+    lineCount = 0; dropCount = 0; logBuffer = "";
+    document.getElementById("lineCount").textContent = 0;
+    document.getElementById("dropCount").textContent = 0;
+    document.getElementById("lastSeen").textContent  = "\u2014";
+  }
+
+  function toggleScroll() {
+    autoScroll = !autoScroll;
+    document.getElementById("scrollIcon").textContent  = autoScroll ? "\u23EC" : "\u23F8";
+    document.getElementById("scrollLabel").textContent = autoScroll ? "Auto" : "Paused";
+  }
+
+  function copyLogs() {
+    const lines = [...document.querySelectorAll(".log-line")]
+      .map(l => l.querySelector(".log-ts").textContent + "  " + l.querySelector(".log-msg").textContent).join("\n");
+    navigator.clipboard.writeText(lines)
+      .then(() => alert("Logs copied to clipboard."))
+      .catch(() => alert("Clipboard unavailable."));
+  }
+
+  function setStatus(connected) {
+    document.getElementById("statusPill").className   = "status-pill " + (connected ? "connected" : "disconnected");
+    document.getElementById("statusText").textContent = connected ? "Connected" : "Disconnected";
+  }
+
+
+  // ── Compact MD5 (inline, no CDN needed) ──────────────────────
+  // Adapted from Paul Johnston's public domain MD5 (md5.js)
+  function md5hex(buf) {
+    function safeAdd(x,y){var l=(x&0xffff)+(y&0xffff);return((x>>16)+(y>>16)+(l>>16))<<16|l&0xffff}
+    function rol(n,c){return n<<c|n>>>32-c}
+    function cmn(q,a,b,x,s,t){return safeAdd(rol(safeAdd(safeAdd(a,q),safeAdd(x,t)),s),b)}
+    function ff(a,b,c,d,x,s,t){return cmn(b&c|~b&d,a,b,x,s,t)}
+    function gg(a,b,c,d,x,s,t){return cmn(b&d|c&~d,a,b,x,s,t)}
+    function hh(a,b,c,d,x,s,t){return cmn(b^c^d,a,b,x,s,t)}
+    function ii(a,b,c,d,x,s,t){return cmn(c^(b|~d),a,b,x,s,t)}
+    var u8 = new Uint8Array(buf);
+    var len8 = u8.length, orig = len8 * 8;
+    var pad = new Uint8Array(len8 + 64 + ((55 - len8 % 64 + 64) % 64) + 9);
+    pad.set(u8); pad[len8] = 0x80;
+    var dv = new DataView(pad.buffer);
+    dv.setUint32(pad.length - 8, orig & 0xffffffff, true);
+    dv.setUint32(pad.length - 4, Math.floor(orig / 0x100000000), true);
+    var a0=0x67452301,b0=0xefcdab89,c0=0x98badcfe,d0=0x10325476;
+    for (var i = 0; i < pad.length; i += 64) {
+      var M=[]; for(var j=0;j<16;j++) M[j]=dv.getUint32(i+j*4,true);
+      var a=a0,b=b0,c=c0,d=d0;
+      a=ff(a,b,c,d,M[0],7,-680876936);  d=ff(d,a,b,c,M[1],12,-389564586); c=ff(c,d,a,b,M[2],17,606105819);   b=ff(b,c,d,a,M[3],22,-1044525330);
+      a=ff(a,b,c,d,M[4],7,-176418897);  d=ff(d,a,b,c,M[5],12,1200080426);  c=ff(c,d,a,b,M[6],17,-1473231341);  b=ff(b,c,d,a,M[7],22,-45705983);
+      a=ff(a,b,c,d,M[8],7,1770035416);  d=ff(d,a,b,c,M[9],12,-1958414417); c=ff(c,d,a,b,M[10],17,-42063);      b=ff(b,c,d,a,M[11],22,-1990404162);
+      a=ff(a,b,c,d,M[12],7,1804603682); d=ff(d,a,b,c,M[13],12,-40341101);  c=ff(c,d,a,b,M[14],17,-1502002290); b=ff(b,c,d,a,M[15],22,1236535329);
+      a=gg(a,b,c,d,M[1],5,-165796510);  d=gg(d,a,b,c,M[6],9,-1069501632);  c=gg(c,d,a,b,M[11],14,643717713);   b=gg(b,c,d,a,M[0],20,-373897302);
+      a=gg(a,b,c,d,M[5],5,-701558691);  d=gg(d,a,b,c,M[10],9,38016083);    c=gg(c,d,a,b,M[15],14,-660478335);  b=gg(b,c,d,a,M[4],20,-405537848);
+      a=gg(a,b,c,d,M[9],5,568446438);   d=gg(d,a,b,c,M[14],9,-1019803690); c=gg(c,d,a,b,M[3],14,-187363961);   b=gg(b,c,d,a,M[8],20,1163531501);
+      a=gg(a,b,c,d,M[13],5,-1444681467);d=gg(d,a,b,c,M[2],9,-51403784);    c=gg(c,d,a,b,M[7],14,1735328473);   b=gg(b,c,d,a,M[12],20,-1926607734);
+      a=hh(a,b,c,d,M[5],4,-378558);     d=hh(d,a,b,c,M[8],11,-2022574463); c=hh(c,d,a,b,M[11],16,1839030562);  b=hh(b,c,d,a,M[14],23,-35309556);
+      a=hh(a,b,c,d,M[1],4,-1530992060); d=hh(d,a,b,c,M[4],11,1272893353);  c=hh(c,d,a,b,M[7],16,-155497632);   b=hh(b,c,d,a,M[10],23,-1094730640);
+      a=hh(a,b,c,d,M[13],4,681279174);  d=hh(d,a,b,c,M[0],11,-358537222);  c=hh(c,d,a,b,M[3],16,-722521979);   b=hh(b,c,d,a,M[6],23,76029189);
+      a=hh(a,b,c,d,M[9],4,-640364487);  d=hh(d,a,b,c,M[12],11,-421815835); c=hh(c,d,a,b,M[15],16,530742520);   b=hh(b,c,d,a,M[2],23,-995338651);
+      a=ii(a,b,c,d,M[0],6,-198630844);  d=ii(d,a,b,c,M[7],10,1126891415);  c=ii(c,d,a,b,M[14],15,-1416354905); b=ii(b,c,d,a,M[5],21,-57434055);
+      a=ii(a,b,c,d,M[12],6,1700485571); d=ii(d,a,b,c,M[3],10,-1894986606); c=ii(c,d,a,b,M[10],15,-1051523);    b=ii(b,c,d,a,M[1],21,-2054922799);
+      a=ii(a,b,c,d,M[8],6,1873313359);  d=ii(d,a,b,c,M[15],10,-30611744);  c=ii(c,d,a,b,M[6],15,-1560198380);  b=ii(b,c,d,a,M[13],21,1309151649);
+      a=ii(a,b,c,d,M[4],6,-145523070);  d=ii(d,a,b,c,M[11],10,-1120210379);c=ii(c,d,a,b,M[2],15,718787259);    b=ii(b,c,d,a,M[9],21,-343485551);
+      a0=safeAdd(a0,a); b0=safeAdd(b0,b); c0=safeAdd(c0,c); d0=safeAdd(d0,d);
+    }
+    function le(n){return[(n)&255,(n>>8)&255,(n>>16)&255,(n>>24)&255]}
+    var out=[...le(a0),...le(b0),...le(c0),...le(d0)];
+    return out.map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+
+  // ── OTA ──────────────────────────────────────────────────────
+  function toggleOTA() {
+    const panel = document.getElementById("otaPanel");
+    const btn   = document.getElementById("otaToggleBtn");
+    const open  = panel.classList.toggle("open");
+    btn.classList.toggle("ota-active", open);
+    if (!open) resetOTA();
+  }
+
+  function onFileSelected() {
+    const file  = document.getElementById("otaFile").files[0];
+    const name  = document.getElementById("otaFileName");
+    const upBtn = document.getElementById("otaUploadBtn");
+    if (file) {
+      name.textContent = file.name + " (" + (file.size / 1024).toFixed(1) + " KB)";
+      name.style.color = "var(--text)";
+      upBtn.disabled   = false;
+    } else {
+      name.textContent = "No file selected";
+      name.style.color = "var(--muted)";
+      upBtn.disabled   = true;
+    }
+    setOTAStatus("", "");
+    document.getElementById("otaBar").value = 0;
+    document.getElementById("otaPct").textContent = "0%";
+  }
+
+  async function startOTA() {
+    const file  = document.getElementById("otaFile").files[0];
+    if (!file) return;
+    const upBtn = document.getElementById("otaUploadBtn");
+    const bar   = document.getElementById("otaBar");
+    const pct   = document.getElementById("otaPct");
+    upBtn.disabled = true;
+
+    // ── Step 1: Compute MD5 ───────────────────────────────────
+    setOTAStatus("Computing MD5\u2026", "busy");
+    let arrayBuf;
+    try {
+      arrayBuf = await file.arrayBuffer();
+    } catch(e) {
+      setOTAStatus("\u2716 Cannot read file: " + e.message, "err");
+      upBtn.disabled = false; return;
+    }
+    const hash = md5hex(arrayBuf);
+    setOTAStatus("MD5: " + hash, "busy");
+
+    // ── Step 2: /ota/start ────────────────────────────────────
+    setOTAStatus("Starting update\u2026", "busy");
+    let startRes;
+    try {
+      startRes = await fetch("/ota/start?mode=fr&hash=" + hash);
+    } catch(e) {
+      setOTAStatus("\u2716 Connection failed: " + e.message, "err");
+      upBtn.disabled = false; return;
+    }
+    if (!startRes.ok) {
+      const errTxt = await startRes.text();
+      setOTAStatus("\u2716 Start failed (" + startRes.status + "): " + errTxt, "err");
+      upBtn.disabled = false; return;
+    }
+
+    // ── Step 3: /ota/upload ───────────────────────────────────
+    const formData = new FormData();
+    formData.append("firmware", file, file.name);
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      const p = Math.round((e.loaded / e.total) * 100);
+      bar.value = p; pct.textContent = p + "%";
+      setOTAStatus(p < 100 ? "Uploading\u2026 " + p + "%" : "Flashing \u2014 do not power off\u2026", "busy");
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        bar.value = 100; pct.textContent = "100%";
+        setOTAStatus("\u2714 Done! ESP32 is rebooting\u2026", "ok");
+      } else {
+        setOTAStatus("\u2716 Upload failed (" + xhr.status + "): " + xhr.responseText, "err");
+        upBtn.disabled = false;
+      }
+    };
+
+    xhr.onerror = () => {
+      // ESP32 reboot mid-response can appear as network error even on success
+      // If we reached 100% upload, treat as likely success
+      if (bar.value === 100) {
+        setOTAStatus("\u2714 Upload complete. ESP32 rebooting\u2026", "ok");
+      } else {
+        setOTAStatus("\u2716 Network error \u2014 check Wi-Fi connection", "err");
+        upBtn.disabled = false;
+      }
+    };
+
+    xhr.open("POST", "/ota/upload");
+    setOTAStatus("Uploading\u2026 0%", "busy");
+    xhr.send(formData);
+  }
+
+  function setOTAStatus(msg, cls) {
+    const el = document.getElementById("otaStatus");
+    el.textContent = msg; el.className = cls;
+  }
+
+  function resetOTA() {
+    document.getElementById("otaFile").value = "";
+    document.getElementById("otaFileName").textContent  = "No file selected";
+    document.getElementById("otaFileName").style.color  = "var(--muted)";
+    document.getElementById("otaUploadBtn").disabled    = true;
+    document.getElementById("otaBar").value             = 0;
+    document.getElementById("otaPct").textContent       = "0%";
+    setOTAStatus("", "");
+  }
+
+</script>
+</body>
+</html>
+)rawhtml";

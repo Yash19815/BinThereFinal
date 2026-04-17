@@ -1,0 +1,79 @@
+#pragma once
+
+// ============================================================
+//  BinThere — config.h (EXAMPLE)
+//  Copy this file to config.h and fill in your actual settings.
+//  The config.h file is ignored by git for security.
+// ============================================================
+
+// ── WiFi ─────────────────────────────────────────────────────
+#define WIFI_SSID                "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD            "YOUR_WIFI_PASSWORD"
+
+// ── Dashboard Server ─────────────────────────────────────────
+#define SERVER_IP                "192.168.x.x"  // Your local computer IP
+#define SERVER_PORT              3001
+#define DEVICE_API_KEY           "your-secure-device-api-key"
+
+// ── Microwave Sensor (RCWL-0516) ─────────────────────────────
+#define MICROWAVE_PIN            14
+#define MOTION_ACTIVE            HIGH
+
+// ── Servo Pins & Angles ───────────────────────────────────────
+#define MG995_PIN                32
+#define SG90_PIN                 13
+
+#define MG995_REST_ANGLE         80
+#define SG90_REST_ANGLE          90
+
+#define MG995_OPEN_ANGLE         10
+#define MG995_CLOSE_ANGLE        80
+
+#define SG90_DRY_ANGLE           130
+#define SG90_WET_ANGLE           40
+
+// MG995/SG90 safe limits & speed
+#define SG90_MIN_ANGLE           60
+#define SG90_MAX_ANGLE           150
+#define MG995_SPEED_MS           60
+#define SG90_MOVE_SPEED_MS       40
+
+// ── Ultrasonic Sensors ───────────────────────────────────────
+#define TRIG_DRY                 5
+#define ECHO_DRY                 18
+#define TRIG_WET                 19
+#define ECHO_WET                 21
+
+// ── Soil Moisture Sensor ─────────────────────────────────────
+#define SOIL_POWER_PIN           27
+#define SOIL_AO_PIN              34
+#define SOIL_SAMPLES             5
+#define SOIL_SAMPLE_DELAY_MS     1000
+#define SOIL_DRY_THRESHOLD       3000
+
+// ── VL53L0X TOF Sensor ───────────────────────────────────────
+#define VL53_SDA                 25
+#define VL53_SCL                 22
+#define TOF_TRIGGER_CM           60.0f
+#define TOF_TIMING_BUDGET_US     500000
+#define TOF_READ_DELAY_MS        100
+#define TOF_SAMPLE_DURATION_MS   5000
+
+// ── Timing ───────────────────────────────────────────────────
+#define MICROWAVE_POLL_MS        3000
+#define ULTRASONIC_INTERVAL_MS   3000
+#define LID_HOLD_MS              7000
+
+// ── HTTP / Network ───────────────────────────────────────────
+#define HTTP_MAX_RETRIES         3
+#define HTTP_RETRY_DELAY_MS      1000
+#define HTTP_TIMEOUT_MS          5000
+
+// ── Watchdog Timer ───────────────────────────────────────────
+#define WDT_TIMEOUT_S            30
+
+// ── Web Serial Monitor ───────────────────────────────────────
+#define WEB_SERIAL_PORT          80
+#define WS_PATH                  "/ws"
+#define WS_MAX_CLIENTS           4
+#define WS_LOG_LINE_CAP          600

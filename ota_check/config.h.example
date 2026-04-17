@@ -1,0 +1,28 @@
+#pragma once
+
+// ============================================================
+//  BinThere — config.h (OTA EXAMPLE)
+//  Copy this file to config.h and fill in your actual settings.
+// ============================================================
+
+// ── WiFi ─────────────────────────────────────────────────────
+#define WIFI_SSID                "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD            "YOUR_WIFI_PASSWORD"
+#define WEBSERIAL_PORT           80
+#define WS_PATH                 "/ws"
+
+// ── Dashboard Server ─────────────────────────────────────────
+#define SERVER_IP                "192.168.x.x"
+#define SERVER_PORT              3001
+#define DEVICE_API_KEY           "your-secure-device-api-key"
+
+// ... (Rest of the hardware pins same as main config)
+// You can copy pins from Final_code/config.h if needed.
+// This utility is mostly for network/OTA confirmation.
+
+#define MG995_PIN                32
+#define SG90_PIN                 13
+#define TRIG_DRY                 5
+#define ECHO_DRY                 18
+#define TRIG_WET                 19
+#define ECHO_WET                 21
