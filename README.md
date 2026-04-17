@@ -62,19 +62,16 @@ demo-ultrasonic/
 
 ## 🚀 Quick Start
 
-### Prerequisites
+Get the project up and running in minutes.
 
-- **Node.js** v18+
-- **Arduino IDE** (only for uploading to ESP32)
-
-### 1 — Install all dependencies
-
+### 1. Configuration (One-Click)
+Run the automated configuration script to install dependencies and setup environment variables:
 ```bash
-npm run install:all
+npm run configure
 ```
 
-### 2 — Start both servers together
-
+### 2. Development
+Start the full-stack development environment (Server + Dashboard):
 ```bash
 npm run dev
 ```
