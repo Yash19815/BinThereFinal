@@ -45,6 +45,9 @@ import exportRoutes from "./exportRoutes.js";
 
 dotenv.config();
 
+/** Total number of bins to support, defaults to 1 if not specified in .env. */
+const TOTAL_BINS = parseInt(process.env.TOTAL_BINS || "1", 10);
+
 // ESM-compatible __dirname equivalent
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -112,11 +115,14 @@ db.exec(`
   );
 `);
 
-/** Ensure default Bin #1 exists so the dashboard has something to display. */
+/** Ensure initial bins exist so the dashboard has data to display on first run. */
 const seedBin = db.prepare(
   "INSERT OR IGNORE INTO bins (id, name, location, max_height_cm) VALUES (?, ?, ?, ?)",
 );
-seedBin.run(1, "Dustbin #001", "Main Campus", 25);
+
+for (let i = 1; i <= TOTAL_BINS; i++) {
+  seedBin.run(i, `Dustbin #${String(i).padStart(3, "0")}`, `Location ${i}`, 25);
+}
 
 /**
  * Seed a default admin user on first startup.
@@ -521,9 +527,12 @@ wss.on("connection", (ws) => {
   console.log("WS client connected — sending current state");
   clients.add(ws);
 
-  // Send current bin state immediately on connect
-  const state = getBinWithCompartments(1);
-  if (state) ws.send(JSON.stringify({ type: "state", bin: state }));
+  // Send current state for all bins immediately on connect
+  const allBins = db.prepare("SELECT id FROM bins").all();
+  allBins.forEach((b) => {
+    const state = getBinWithCompartments(b.id);
+    if (state) ws.send(JSON.stringify({ type: "state", bin: state }));
+  });
 
   ws.on("close", () => clients.delete(ws));
   ws.on("error", () => clients.delete(ws));
@@ -567,6 +576,39 @@ app.get("/api/bins", requireAuth, (req, res) => {
   const bins = db.prepare("SELECT * FROM bins").all();
   const result = bins.map((b) => getBinWithCompartments(b.id));
   res.json({ status: "success", bins: result });
+});
+
+/**
+ * PATCH /api/bins/:id
+ * Updates a bin's metadata (location).
+ *
+ * Body: { location: string }
+ * Returns: { status: 'success', bin: object }
+ */
+app.patch("/api/bins/:id", requireAuth, (req, res) => {
+  const binId = parseInt(req.params.id, 10);
+  const { location } = req.body;
+
+  if (typeof location !== "string" || location.trim() === "") {
+    return res
+      .status(400)
+      .json({ status: "error", message: "Location is required" });
+  }
+
+  const result = db
+    .prepare("UPDATE bins SET location = ? WHERE id = ?")
+    .run(location.trim(), binId);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ status: "error", message: "Bin not found" });
+  }
+
+  const updatedBin = getBinWithCompartments(binId);
+  if (updatedBin) {
+    broadcast({ type: "update", bin: updatedBin });
+  }
+
+  res.json({ status: "success", bin: updatedBin });
 });
 
 /**

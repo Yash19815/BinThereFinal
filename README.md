@@ -124,6 +124,7 @@ The system is designed to work with minimal manual editing. Most variables are i
 | `JWT_SECRET`     | Backend       | Root secret for secure session tokens          |
 | `DB_PATH`        | Backend       | Path to the `bins.db` SQLite storage           |
 | `DEVICE_API_KEY` | Backend       | Static bypass key for hardware authentications |
+| `TOTAL_BINS`    | Backend       | Total number of bins to seed/support (Default: 1) |
 | `VITE_API_URL`   | Frontend      | Bridge URL (auto-generated for local IP)       |
 
 > [!WARNING]
@@ -155,6 +156,7 @@ Requires `Authorization: Bearer <token>` or `X-Device-Key: <key>`.
 | `GET`  | `/api/bins/:id`             | Single bin details + measurement history |
 | `GET`  | `/api/bins/:id/analytics`   | Daily fill-cycle trend data              |
 | `GET`  | `/api/bins/:id/heatmap`     | 24x7 peak hours matrix                   |
+| `PATCH`| `/api/bins/:id`             | Update bin metadata (e.g., location)     |
 | `POST` | `/api/bins/:id/measurement` | Record per-compartment reading           |
 | `GET`  | `/api/export/excel`         | Multi-sheet data export (IST)            |
 

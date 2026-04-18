@@ -1392,3 +1392,100 @@ button {
 .dark .heatmap-hour-label {
   color: var(--text-sec);
 }
+
+/* ── Bin Selector ───────────────────────────────────────────────────────────── */
+.bin-selector-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.selector-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.selector-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text2);
+}
+
+.selector-sub {
+  font-size: 0.88rem;
+  color: var(--text3);
+}
+
+.analytics-bin-select {
+  min-width: 240px;
+  padding: 0.6rem 2.5rem 0.6rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.analytics-bin-select:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+@media (max-width: 640px) {
+  .bin-selector-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .analytics-bin-select {
+    width: 100%;
+  }
+}
+
+/* BinCard Location Editing UI */
+.location-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.edit-loc-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.9rem;
+  opacity: 0.4;
+  transition: opacity 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-loc-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.dark .edit-loc-btn {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.1));
+}

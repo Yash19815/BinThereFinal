@@ -767,7 +767,7 @@ function CompartmentPanel({ label, data, darkMode }) {
  *   bin     – Full bin object from the API (includes .dry and .wet sub-objects)
  *   onClick – Called when the card is clicked to open the detail modal
  */
-function BinCard({ bin, onClick }) {
+function BinCard({ bin, onClick, onEditLocation }) {
   const dryPct = bin?.dry?.fill_level_percent ?? null;
   const wetPct = bin?.wet?.fill_level_percent ?? null;
   const count = (dryPct !== null ? 1 : 0) + (wetPct !== null ? 1 : 0);
@@ -781,7 +781,19 @@ function BinCard({ bin, onClick }) {
         <div className="bin-icon">🗑️</div>
         <div className="bin-meta">
           <h2 className="bin-name">{bin.name}</h2>
-          <p className="bin-location">📍 {bin.location}</p>
+          <div className="location-row">
+            <p className="bin-location">📍 {bin.location}</p>
+            <button
+              className="edit-loc-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditLocation(bin);
+              }}
+              title="Edit Location"
+            >
+              ✏️
+            </button>
+          </div>
         </div>
         {isAlert && <span className="alert-chip">⚠ Alert</span>}
       </div>
@@ -1316,6 +1328,7 @@ export default function App() {
   );
   const [wsStatus, setWsStatus] = useState("connecting");
   const [analyticsKey, setAnalyticsKey] = useState(0);
+  const [analyticsBinId, setAnalyticsBinId] = useState(1);
   const wsRef = useRef(null);
 
   // Apply dark mode class to <html>
@@ -1340,6 +1353,13 @@ export default function App() {
   useEffect(() => {
     fetchBins();
   }, [fetchBins]);
+
+  // Automatically select the first bin for analytics once bins are populated
+  useEffect(() => {
+    if (bins.length > 0 && !analyticsBinId) {
+      setAnalyticsBinId(bins[0].id);
+    }
+  }, [bins, analyticsBinId]);
 
   // WebSocket for real-time updates
   useEffect(() => {
@@ -1386,6 +1406,33 @@ export default function App() {
       setHistory(json.history || []);
     } catch {
       setHistory([]);
+    }
+  };
+
+  const handleEditLocation = async (bin) => {
+    const newLoc = window.prompt(`Update location for ${bin.name}:`, bin.location);
+    if (!newLoc || newLoc.trim() === "" || newLoc === bin.location) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/bins/${bin.id}`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders(token),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ location: newLoc.trim() }),
+      });
+      const json = await res.json();
+      if (json.status === "success") {
+        // Bin state will also be updated via WebSocket broadcast
+        setBins((prev) =>
+          prev.map((b) => (b.id === bin.id ? { ...b, location: json.bin.location } : b))
+        );
+      } else {
+        alert(`Failed to update location: ${json.message}`);
+      }
+    } catch (err) {
+      alert("Error updating location");
     }
   };
 
@@ -1440,19 +1487,45 @@ export default function App() {
           </div>
         ) : (
           <>
+            {/* Bin Selector for Analytics */}
+            <div className="bin-selector-container">
+              <div className="selector-meta">
+                <label className="selector-label">Analytics Target</label>
+                <p className="selector-sub">
+                  Switching reports for Garbage Collection & Peak Hours
+                </p>
+              </div>
+              <select
+                className="analytics-bin-select"
+                value={analyticsBinId}
+                onChange={(e) => setAnalyticsBinId(Number(e.target.value))}
+              >
+                {bins.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} — {b.location}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <AnalyticsSection
-              binId={1}
+              binId={analyticsBinId}
               refreshKey={analyticsKey}
               token={token}
               darkMode={darkMode}
             />
-            <PeakHoursHeatmap binId={1} token={token} darkMode={darkMode} />
+            <PeakHoursHeatmap
+              binId={analyticsBinId}
+              token={token}
+              darkMode={darkMode}
+            />
             <div className="bin-grid">
               {bins.map((bin) => (
                 <BinCard
                   key={bin.id}
                   bin={bin}
                   onClick={() => openDetail(bin)}
+                  onEditLocation={handleEditLocation}
                 />
               ))}
             </div>
