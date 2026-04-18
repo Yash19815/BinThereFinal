@@ -3,7 +3,7 @@
 .env.local
 .env.*.local
 # Arduino WiFi credentials — copy from config.h.example and fill in your own
-Final_code/config.h
+ESP32_Code/config.h
 ota_check/config.h
 
 # ── Arduino / Build Artifacts ─────────────────────────────────

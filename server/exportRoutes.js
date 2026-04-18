@@ -138,6 +138,8 @@ router.get("/export/excel", async (req, res) => {
     createBinsSheet(workbook, bins);
     createMeasurementsSheet(workbook, measurements);
     createFillCyclesSheet(workbook, fillCycles);
+    createHeatmapSheet(workbook, fillCycles);
+    createTrendSheet(workbook, fillCycles);
     createSummarySheet(workbook, bins, measurements, fillCycles);
 
     const filename = `binthere_export_${new Date().toISOString().split("T")[0]}.xlsx`;
@@ -444,6 +446,123 @@ function createFillCyclesSheet(workbook, fillCycles) {
         if (i === 4 && typeof val === "string" && val !== "Still Full") cell.numFmt = "0.00";
       });
     }
+  }
+}
+
+// ─── Heatmap sheet ────────────────────────────────────────────────────────
+function createHeatmapSheet(workbook, fillCycles) {
+  const sheet = workbook.addWorksheet("Heatmap Data", {
+    properties: { tabColor: { argb: "FFED7D31" } }
+  });
+
+  const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  
+  // Headers: Day, 00:00 to 23:00
+  const headers = ["Day"];
+  for (let h = 0; h < 24; h++) {
+    headers.push(`${h.toString().padStart(2, "0")}:00`);
+  }
+  sheet.addRow(headers);
+  styleHeaderRow(sheet, "FFED7D31"); // Orange theme for Heatmap
+
+  // Initialize 7x24 matrix
+  const matrix = Array.from({ length: 7 }, () => Array(24).fill(0));
+
+  fillCycles.forEach(c => {
+    if (!c.filled_at) return;
+    const d = new Date(c.filled_at);
+    // Convert to IST
+    const istMs = d.getTime() + (330 * 60 * 1000);
+    const istDate = new Date(istMs);
+    
+    // Day: 0=Sun, 1=Mon... we want row 0=Mon, 6=Sun
+    const jsDay = istDate.getUTCDay();
+    const dayRow = (jsDay + 6) % 7; 
+    const hr = istDate.getUTCHours();
+
+    matrix[dayRow][hr]++;
+  });
+
+  let maxVal = 0;
+  for (let r = 0; r < 7; r++) {
+    const rowData = [DAYS[r], ...matrix[r]];
+    sheet.addRow(rowData);
+    for (const val of matrix[r]) {
+      if (val > maxVal) maxVal = val;
+    }
+  }
+
+  // Set column widths
+  sheet.getColumn(1).width = 15;
+  for (let i = 2; i <= 25; i++) {
+    sheet.getColumn(i).width = 8;
+  }
+
+  if (maxVal > 0) {
+    // Add conditional formatting
+    sheet.addConditionalFormatting({
+      ref: 'B2:Y8',
+      rules: [
+        {
+          type: 'colorScale',
+          cfvo: [{ type: 'num', value: 0 }, { type: 'num', value: maxVal }],
+          color: [{ argb: 'FFFFFFFF' }, { argb: 'FFED7D31' }]
+        }
+      ]
+    });
+  }
+}
+
+// ─── Trend sheet ──────────────────────────────────────────────────────────
+function createTrendSheet(workbook, fillCycles) {
+  const sheet = workbook.addWorksheet("Trend Data", {
+    properties: { tabColor: { argb: "FFFFC000" } }
+  });
+
+  sheet.addRow(["Date", "Dry Cycles", "Wet Cycles", "Total Cycles"]);
+  styleHeaderRow(sheet, "FF5B9BD5");
+
+  // Aggregate by Date
+  const dateMap = {};
+  fillCycles.forEach(c => {
+    if (!c.filled_at) return;
+    const d = new Date(c.filled_at);
+    const istMs = d.getTime() + (330 * 60 * 1000);
+    const istDate = new Date(istMs);
+    const dateStr = istDate.toISOString().split("T")[0];
+
+    if (!dateMap[dateStr]) dateMap[dateStr] = { dry: 0, wet: 0, total: 0 };
+    if (c.compartment === "dry") dateMap[dateStr].dry++;
+    if (c.compartment === "wet") dateMap[dateStr].wet++;
+    dateMap[dateStr].total++;
+  });
+
+  const sortedDates = Object.keys(dateMap).sort();
+  let maxTotal = 0;
+
+  sortedDates.forEach(date => {
+    const { dry, wet, total } = dateMap[date];
+    if (total > maxTotal) maxTotal = total;
+    sheet.addRow([date, dry, wet, total]);
+  });
+
+  sheet.getColumn(1).width = 15;
+  sheet.getColumn(2).width = 15;
+  sheet.getColumn(3).width = 15;
+  sheet.getColumn(4).width = 15;
+
+  const numRows = sortedDates.length;
+  if (numRows > 0 && maxTotal > 0) {
+    sheet.addConditionalFormatting({
+      ref: `D2:D${numRows + 1}`,
+      rules: [
+        {
+          type: 'dataBar',
+          cfvo: [{ type: 'num', value: 0 }, { type: 'num', value: maxTotal }],
+          color: { argb: 'FF5B9BD5' }
+        }
+      ]
+    });
   }
 }
 

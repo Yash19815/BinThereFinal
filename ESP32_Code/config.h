@@ -81,3 +81,7 @@
 #define WS_PATH "/ws"
 #define WS_MAX_CLIENTS 4
 #define WS_LOG_LINE_CAP 600
+
+// ── OTA Firmware Update ──────────────────────────────────────
+#define OTA_USERNAME "binthere_admin"
+#define OTA_PASSWORD "change_me_before_use" // User should change this!

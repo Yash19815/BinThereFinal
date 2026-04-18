@@ -1,5 +1,6 @@
 /* ── Design Tokens ─────────────────────────────────────────────────────────── */
 :root {
+  color-scheme: light;
   --bg: #f0f4f8;
   --surface: #ffffff;
   --surface2: #f8fafc;
@@ -25,6 +26,7 @@
 }
 
 html.dark {
+  color-scheme: dark;
   --bg: #0f1117;
   --surface: #1a1d2e;
   --surface2: #13151f;
@@ -1539,4 +1541,92 @@ button {
 
 .dark .edit-loc-btn, .dark .delete-bin-btn {
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.1));
+}
+
+/* ── Utilization Score Card ──────────────────────────────────────────────────────── */
+.summary-stat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.75rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add a subtle top border highlight based on status color */
+.summary-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+/* Inherit currentColor based on the status class */
+.summary-stat-card.low { color: var(--c-low); }
+.summary-stat-card.high { color: var(--c-high); }
+.summary-stat-card.full { color: var(--c-full); }
+.summary-stat-card.unknown { color: var(--text3); }
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text); /* text base color */
+}
+
+.stat-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--text2);
+  font-weight: 500;
+}
+
+.stat-value-text {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-top: 0.25rem;
+  line-height: 1;
+}
+
+.stat-circle-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.stat-circle {
+  transform: rotate(-90deg);
+}
+
+.stat-circle-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 8;
+}
+
+.stat-circle-fg {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.5s ease;
 }

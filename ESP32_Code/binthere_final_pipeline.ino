@@ -511,6 +511,10 @@ void setup() {
   // Prerequisite (one-time): In ElegantOTA.h, set:
   //   #define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
   ElegantOTA.begin( & webSerial);
+  
+  // ⚠️ SECURITY: Change OTA_USERNAME and OTA_PASSWORD in config.h before deploying!
+  // Default credentials are for development only.
+  ElegantOTA.setAuth(OTA_USERNAME, OTA_PASSWORD);
 
   webSerial.begin();
   Serial.printf("[WSMON] Web Serial Monitor → http://%s:%d/\n",

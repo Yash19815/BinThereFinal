@@ -106,7 +106,7 @@ const ExportToExcel = ({ apiBaseUrl = "http://localhost:3001/api" }) => {
     <div className="export-container">
       <div className="date-range">
         <label className="date-label">
-          From
+          <span className="date-label-text">From</span>
           <input
             className="date-input"
             type="date"
@@ -115,8 +115,9 @@ const ExportToExcel = ({ apiBaseUrl = "http://localhost:3001/api" }) => {
             disabled={isExporting}
           />
         </label>
+        <span className="date-separator">→</span>
         <label className="date-label">
-          To
+          <span className="date-label-text">To</span>
           <input
             className="date-input"
             type="date"
@@ -135,105 +136,141 @@ const ExportToExcel = ({ apiBaseUrl = "http://localhost:3001/api" }) => {
       >
         {isExporting ? (
           <>
-            <Loader2 className="icon spin" size={18} />
+            <Loader2 className="icon spin" size={16} />
             <span>Exporting...</span>
           </>
         ) : exportStatus === "success" ? (
           <>
-            <CheckCircle className="icon" size={18} />
+            <CheckCircle className="icon" size={16} />
             <span>Exported!</span>
           </>
         ) : exportStatus === "error" ? (
           <>
-            <XCircle className="icon" size={18} />
-            <span>Export Failed</span>
+            <XCircle className="icon" size={16} />
+            <span>Failed</span>
           </>
         ) : (
           <>
-            <Download className="icon" size={18} />
-            <span>Export to Excel</span>
+            <FileSpreadsheet className="icon" size={16} />
+            <span>Export</span>
           </>
         )}
       </button>
 
       {exportStatus === "error" && (
         <div className="error-message">
-          {formError ? formError : "Failed to export data. Please try again."}
+          {formError ? formError : "Failed to export data."}
         </div>
       )}
 
       <style jsx>{`
         .export-container {
-          display: inline-block;
+          display: flex;
+          align-items: center;
+          gap: 12px;
           position: relative;
+          background: var(--surface);
+          padding: 6px 12px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .date-range {
           display: flex;
+          align-items: center;
           gap: 10px;
-          align-items: flex-end;
-          margin-bottom: 8px;
+        }
+
+        .date-separator {
+          color: var(--text3);
+          font-weight: 500;
+          font-size: 0.85rem;
+          margin-top: 14px;
         }
 
         .date-label {
           display: flex;
           flex-direction: column;
           gap: 4px;
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .date-label-text {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text2);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
         }
 
         .date-input {
           appearance: none;
-          border: 1px solid rgba(255, 255, 255, 0.28);
-          background: rgba(0, 0, 0, 0.18);
-          color: white;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          color: var(--text);
           border-radius: 6px;
-          padding: 6px 8px;
-          font-size: 13px;
+          padding: 6px 10px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          font-family: inherit;
+          transition: all 0.2s ease;
+        }
+        
+        .date-input:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
         }
 
         .date-input:disabled {
-          opacity: 0.7;
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .export-button {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px 20px;
-          background: #4472c4;
+          gap: 6px;
+          padding: 8px 14px;
+          margin-top: 18px; /* align with inputs that have labels */
+          background: #10b981; /* Premium green for Excel */
           color: white;
           border: none;
           border-radius: 6px;
-          font-size: 14px;
-          font-weight: 500;
+          font-size: 0.85rem;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: inherit;
+          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
         }
 
         .export-button:hover:not(:disabled) {
-          background: #365da3;
+          background: #059669;
           transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(68, 114, 196, 0.3);
+          box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
         }
 
         .export-button:active:not(:disabled) {
           transform: translateY(0);
+          box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
         }
 
         .export-button:disabled {
           opacity: 0.7;
           cursor: not-allowed;
+          background: var(--text3);
+          box-shadow: none;
         }
 
         .export-button.success {
-          background: #28a745;
+          background: #3b82f6;
+          box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
         }
 
         .export-button.error {
-          background: #dc3545;
+          background: #ef4444;
+          box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);
         }
 
         .icon {
@@ -245,32 +282,31 @@ const ExportToExcel = ({ apiBaseUrl = "http://localhost:3001/api" }) => {
         }
 
         @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
 
         .error-message {
           position: absolute;
           top: calc(100% + 8px);
-          left: 0;
-          background: #dc3545;
-          color: white;
+          right: 0;
+          background: var(--surface);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.3);
           padding: 8px 12px;
-          border-radius: 4px;
-          font-size: 12px;
+          border-radius: 6px;
+          font-size: 0.8rem;
+          font-weight: 500;
           white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          animation: slideDown 0.3s ease;
+          box-shadow: var(--shadow-lg);
+          animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          z-index: 10;
         }
 
         @keyframes slideDown {
           from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateY(-8px);
           }
           to {
             opacity: 1;

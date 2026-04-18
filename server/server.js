@@ -642,6 +642,27 @@ app.patch("/api/bins/:id", requireAuth, (req, res) => {
 });
 
 /**
+ * GET /api/analytics/utilization
+ * Returns the average fill level across all bins and compartments over the last 24 hours.
+ */
+app.get("/api/analytics/utilization", requireAuth, (req, res) => {
+  try {
+    const row = db.prepare(`
+      SELECT AVG(fill_level_percent) as avgFill
+      FROM measurements
+      WHERE timestamp >= datetime('now', '-24 hours')
+    `).get();
+
+    res.json({
+      status: "success",
+      utilization_score: row && row.avgFill !== null ? Math.round(row.avgFill) : 0
+    });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/**
  * GET /api/bins/:id/analytics
  * Returns per-day fill-cycle counts for the requested date range.
  *

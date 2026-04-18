@@ -24,6 +24,7 @@
  *  VITE_API_URL – REST API base URL   (default: http://localhost:3001)
  */
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import html2canvas from "html2canvas";
 import "./App.css";
 import { useAuth } from "./AuthContext.jsx";
 import LoginPage from "./LoginPage.jsx";
@@ -90,6 +91,21 @@ function AnalyticsSection({ binId, refreshKey, token, darkMode }) {
   const [loading, setLoading] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const svgRef = useRef(null);
+  const sectionRef = useRef(null);
+
+  const handleExportImage = async () => {
+    if (!sectionRef.current) return;
+    try {
+      const canvas = await html2canvas(sectionRef.current, { backgroundColor: darkMode ? '#1a1d2e' : '#ffffff' });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `analytics-chart-${Date.now()}.png`;
+      link.click();
+    } catch (err) {
+      console.error("Export failed", err);
+    }
+  };
 
   /**
    * Fetches analytics data from GET /api/bins/:id/analytics?range=<n>.
@@ -231,13 +247,16 @@ function AnalyticsSection({ binId, refreshKey, token, darkMode }) {
   const xStep = Math.max(1, Math.ceil(xLabels.length / 8));
 
   return (
-    <div className="analytics-section">
+    <div className="analytics-section" ref={sectionRef}>
       {/* Header row */}
       <div className="analytics-header">
         <div>
           <h2 className="analytics-title">Garbage Collection Analytics</h2>
           <p className="analytics-sub">Today's fill count per compartment</p>
         </div>
+        <button className="refresh-btn" onClick={handleExportImage} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+          📷 Export as Image
+        </button>
       </div>
 
       <div className="analytics-body">
@@ -1206,6 +1225,21 @@ function PeakHoursHeatmap({ binId, token, darkMode }) {
   const [compartment, setCompartment] = useState("dry"); // 'dry' | 'wet'
   const [tooltip, setTooltip] = useState(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const heatmapRef = useRef(null);
+
+  const handleExportImage = async () => {
+    if (!heatmapRef.current) return;
+    try {
+      const canvas = await html2canvas(heatmapRef.current, { backgroundColor: darkMode ? '#1a1d2e' : '#ffffff' });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `heatmap-export-${Date.now()}.png`;
+      link.click();
+    } catch (err) {
+      console.error("Export failed", err);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -1227,13 +1261,17 @@ function PeakHoursHeatmap({ binId, token, darkMode }) {
   const { data, max, weeks } = heatmap;
 
   return (
-    <div className="analytics-section" style={{ marginTop: "24px" }}>
+    <div className="analytics-section" style={{ marginTop: "24px" }} ref={heatmapRef}>
       <div className="analytics-header">
         <div>
           <h2 className="analytics-title">Peak Fill Hours</h2>
           <p className="analytics-sub">Average fill cycles by time of day</p>
         </div>
-        <div className="heatmap-controls range-select-wrap">
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button className="refresh-btn" onClick={handleExportImage} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+            📷 Export as Image
+          </button>
+          <div className="heatmap-controls range-select-wrap">
           <select
             className="range-select"
             value={compartment}
@@ -1242,9 +1280,9 @@ function PeakHoursHeatmap({ binId, token, darkMode }) {
             <option value="dry">Dry Waste</option>
             <option value="wet">Wet Waste</option>
           </select>
+          </div>
         </div>
       </div>
-      
       <div className="analytics-body" style={{ padding: "0 24px 24px 24px" }}>
         <div className="heatmap-wrapper">
           <div className="heatmap-meta" style={{ marginBottom: "12px", fontSize: "14px", color: "var(--text-sec)" }}>
@@ -1330,6 +1368,71 @@ function PeakHoursHeatmap({ binId, token, darkMode }) {
  *  4. WS disconnects           → auto-reconnects after 3 s
  *  5. Unmount                  → closes the WebSocket cleanly
  */
+/**
+ * SummaryStats
+ * Displays the 24h Bin Utilization Score.
+ */
+function SummaryStats({ token, refreshKey, darkMode }) {
+  const [score, setScore] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_URL}/api/analytics/utilization`, { headers: authHeaders(token) })
+      .then(res => res.json())
+      .then(data => {
+        if (active && data.status === "success") {
+          setScore(data.utilization_score);
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [token, refreshKey]);
+
+  let statusColor = "var(--text3)";
+  let statusClass = "unknown";
+  if (score !== null) {
+    if (score <= 40) { statusColor = "var(--c-low)"; statusClass = "low"; }
+    else if (score <= 70) { statusColor = "var(--c-high)"; statusClass = "high"; }
+    else { statusColor = "var(--c-full)"; statusClass = "full"; }
+  }
+
+  // Circular progress math
+  const radius = 32;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = score !== null 
+    ? circumference - (score / 100) * circumference
+    : circumference;
+
+  return (
+    <div className={`summary-stat-card ${statusClass}`}>
+      <div className="stat-info">
+        <h3 className="stat-title">Utilization Score</h3>
+        <p className="stat-label">Avg fill level (24h)</p>
+        <div className="stat-value-text" style={{ color: statusColor }}>
+          {score !== null ? `${score}%` : "—"}
+        </div>
+      </div>
+      <div className="stat-circle-wrap">
+        <svg width="84" height="84" className="stat-circle" viewBox="0 0 84 84">
+          <circle 
+            cx="42" cy="42" r={radius} 
+            className="stat-circle-bg" 
+          />
+          <circle 
+            cx="42" cy="42" r={radius} 
+            className="stat-circle-fg"
+            style={{ 
+              stroke: statusColor,
+              strokeDasharray: circumference,
+              strokeDashoffset: strokeDashoffset
+            }} 
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { user, token, logout, loading: authLoading } = useAuth();
   const [bins, setBins] = useState([]);
@@ -1541,6 +1644,10 @@ export default function App() {
               ↻ Refresh
             </button>
           </div>
+        </div>
+
+        <div className="summary-stats">
+          <SummaryStats token={token} refreshKey={analyticsKey} darkMode={darkMode} />
         </div>
 
         {bins.length === 0 ? (
