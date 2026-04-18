@@ -1486,6 +1486,57 @@ button {
   transform: scale(1.15);
 }
 
-.dark .edit-loc-btn {
+.delete-bin-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.9rem;
+  opacity: 0.4;
+  transition: opacity 0.2s, transform 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-bin-btn:hover {
+  opacity: 1;
+  color: #ef4444;
+  transform: scale(1.15);
+}
+
+.bin-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.page-title-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.add-bin-btn {
+  background: var(--bg-hover);
+  border: 1px border rgba(255, 255, 255, 0.1);
+  color: var(--text-pri);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.add-bin-btn:hover {
+  background: var(--btn-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dark .edit-loc-btn, .dark .delete-bin-btn {
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.1));
 }

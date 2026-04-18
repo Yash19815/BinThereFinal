@@ -46,7 +46,7 @@ import exportRoutes from "./exportRoutes.js";
 dotenv.config();
 
 /** Total number of bins to support, defaults to 1 if not specified in .env. */
-const TOTAL_BINS = parseInt(process.env.TOTAL_BINS || "1", 10);
+
 
 // ESM-compatible __dirname equivalent
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -115,14 +115,6 @@ db.exec(`
   );
 `);
 
-/** Ensure initial bins exist so the dashboard has data to display on first run. */
-const seedBin = db.prepare(
-  "INSERT OR IGNORE INTO bins (id, name, location, max_height_cm) VALUES (?, ?, ?, ?)",
-);
-
-for (let i = 1; i <= TOTAL_BINS; i++) {
-  seedBin.run(i, `Dustbin #${String(i).padStart(3, "0")}`, `Location ${i}`, 25);
-}
 
 /**
  * Seed a default admin user on first startup.
@@ -576,6 +568,44 @@ app.get("/api/bins", requireAuth, (req, res) => {
   const bins = db.prepare("SELECT * FROM bins").all();
   const result = bins.map((b) => getBinWithCompartments(b.id));
   res.json({ status: "success", bins: result });
+});
+
+/**
+ * POST /api/bins
+ * Creates a new dustbin.
+ */
+app.post("/api/bins", requireAuth, (req, res) => {
+  const { name, location, max_height_cm = 25 } = req.body;
+  if (!name || !location) {
+    return res.status(400).json({ status: "error", message: "Name and location are required" });
+  }
+
+  const result = db
+    .prepare("INSERT INTO bins (name, location, max_height_cm) VALUES (?, ?, ?)")
+    .run(name.trim(), location.trim(), max_height_cm);
+
+  const newBin = getBinWithCompartments(result.lastInsertRowid);
+  broadcast({ type: "new", bin: newBin });
+  res.status(201).json({ status: "success", bin: newBin });
+});
+
+/**
+ * DELETE /api/bins/:id
+ * Permanently deletes a bin and all its history.
+ */
+app.delete("/api/bins/:id", requireAuth, (req, res) => {
+  const binId = parseInt(req.params.id, 10);
+  const bin = db.prepare("SELECT * FROM bins WHERE id = ?").get(binId);
+  if (!bin) return res.status(404).json({ status: "error", message: "Bin not found" });
+
+  db.transaction(() => {
+    db.prepare("DELETE FROM measurements WHERE bin_id = ?").run(binId);
+    db.prepare("DELETE FROM fill_cycles WHERE bin_id = ?").run(binId);
+    db.prepare("DELETE FROM bins WHERE id = ?").run(binId);
+  })();
+
+  broadcast({ type: "delete", binId });
+  res.json({ status: "success", message: "Bin deleted" });
 });
 
 /**

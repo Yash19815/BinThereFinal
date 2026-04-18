@@ -767,7 +767,7 @@ function CompartmentPanel({ label, data, darkMode }) {
  *   bin     – Full bin object from the API (includes .dry and .wet sub-objects)
  *   onClick – Called when the card is clicked to open the detail modal
  */
-function BinCard({ bin, onClick, onEditLocation }) {
+function BinCard({ bin, onClick, onEditLocation, onDeleteBin }) {
   const dryPct = bin?.dry?.fill_level_percent ?? null;
   const wetPct = bin?.wet?.fill_level_percent ?? null;
   const count = (dryPct !== null ? 1 : 0) + (wetPct !== null ? 1 : 0);
@@ -783,16 +783,28 @@ function BinCard({ bin, onClick, onEditLocation }) {
           <h2 className="bin-name">{bin.name}</h2>
           <div className="location-row">
             <p className="bin-location">📍 {bin.location}</p>
-            <button
-              className="edit-loc-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditLocation(bin);
-              }}
-              title="Edit Location"
-            >
-              ✏️
-            </button>
+            <div className="bin-actions">
+              <button
+                className="edit-loc-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditLocation(bin);
+                }}
+                title="Edit Location"
+              >
+                ✏️
+              </button>
+              <button
+                className="delete-bin-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteBin(bin);
+                }}
+                title="Delete Dustbin"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
         </div>
         {isAlert && <span className="alert-chip">⚠ Alert</span>}
@@ -1377,9 +1389,10 @@ export default function App() {
 
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
-        if (msg.type === "state" || msg.type === "update") {
+        if (msg.type === "state" || msg.type === "update" || msg.type === "new") {
           setBins((prev) => {
-            const idx = prev.findIndex((b) => b.id === msg.bin.id);
+            const idToFind = msg.type === "new" ? msg.bin.id : (msg.bin?.id);
+            const idx = prev.findIndex((b) => b.id === idToFind);
             if (idx >= 0) {
               const next = [...prev];
               next[idx] = msg.bin;
@@ -1389,6 +1402,11 @@ export default function App() {
           });
           // Nudge analytics to re-fetch on every incoming measurement
           if (msg.type === "update") setAnalyticsKey((k) => k + 1);
+        } else if (msg.type === "delete") {
+          setBins((prev) => prev.filter((b) => b.id !== msg.binId));
+          if (analyticsBinId === msg.binId) {
+            setAnalyticsBinId(null); // Reset analytics target if deleted
+          }
         }
       };
     };
@@ -1424,7 +1442,6 @@ export default function App() {
       });
       const json = await res.json();
       if (json.status === "success") {
-        // Bin state will also be updated via WebSocket broadcast
         setBins((prev) =>
           prev.map((b) => (b.id === bin.id ? { ...b, location: json.bin.location } : b))
         );
@@ -1433,6 +1450,52 @@ export default function App() {
       }
     } catch (err) {
       alert("Error updating location");
+    }
+  };
+
+  const handleAddBin = async () => {
+    const name = window.prompt("Enter Dustbin Name:");
+    if (!name) return;
+    const location = window.prompt("Enter Location:");
+    if (!location) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/bins`, {
+        method: "POST",
+        headers: {
+          ...authHeaders(token),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: name.trim(), location: location.trim() }),
+      });
+      const json = await res.json();
+      if (json.status === "success") {
+        // WS will also handle adding to list, but we can do it here too
+        setBins((prev) => [...prev, json.bin]);
+      } else {
+        alert(`Failed to add bin: ${json.message}`);
+      }
+    } catch (err) {
+      alert("Error creating bin");
+    }
+  };
+
+  const handleDeleteBin = async (bin) => {
+    if (!window.confirm(`Are you sure you want to delete "${bin.name}"?\nThis will erase ALL its history permanently.`)) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/bins/${bin.id}`, {
+        method: "DELETE",
+        headers: authHeaders(token),
+      });
+      const json = await res.json();
+      if (json.status === "success") {
+        setBins((prev) => prev.filter((b) => b.id !== bin.id));
+      } else {
+        alert(`Failed to delete bin: ${json.message}`);
+      }
+    } catch (err) {
+      alert("Error deleting bin");
     }
   };
 
@@ -1469,7 +1532,10 @@ export default function App() {
               Real-time fill levels via ultrasonic sensors
             </p>
           </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <div className="page-title-actions">
+            <button className="add-bin-btn" onClick={handleAddBin}>
+              ➕ Add Dustbin
+            </button>
             <ExportToExcel />
             <button className="refresh-btn" onClick={fetchBins} title="Refresh">
               ↻ Refresh
@@ -1526,6 +1592,7 @@ export default function App() {
                   bin={bin}
                   onClick={() => openDetail(bin)}
                   onEditLocation={handleEditLocation}
+                  onDeleteBin={handleDeleteBin}
                 />
               ))}
             </div>

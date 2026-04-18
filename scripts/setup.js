@@ -112,6 +112,9 @@ async function setup() {
   Default Credentials:
   - Username: \x1b[1madmin\x1b[0m
   - Password: \x1b[1madmin123\x1b[0m
+  
+  \x1b[36mNote:\x1b[0m Dustbins are now managed dynamically from the dashboard.
+  Once logged in, use the "➕ Add Dustbin" button to register your units.
   `);
 }
 
