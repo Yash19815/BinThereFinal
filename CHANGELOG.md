@@ -29,6 +29,10 @@ Changes that are complete but not yet deployed to production.
 ### Changed
 
 - Re-wrote `test-sensor.ps1` incorporating `-BinId` parameters natively simulating measurements across the dynamic dustbin mapping instead of the legacy single-bin endpoint. Automatic `server/.env` credential parsing was implemented to securely interact with the updated API.
+- **Frontend Architecture**: Completely refactored the monolithic `App.jsx` into modular components separated by domains (`hooks/`, `components/dashboard/`, `components/ui/`, `components/modals/`, etc.) improving maintainability.
+- **UI/UX**: Transitioned visual style from 'Utilitarian Glass' to 'Industrial Clean' utilizing solid surfaces, subtle scalable elevation, removing neon glows.
+- **Accessibility**: Implemented global `prefers-reduced-motion` support restricting ping and pulse animation outputs conditionally.
+- **Performance**: Applied strict `React.memo` constraints, dynamic primitive prop generation hooks, and `useMemo` strictly isolating SVG path calculations for WebSocket resistance.
 
 ---
 

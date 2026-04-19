@@ -163,17 +163,19 @@ const ExportToExcel = ({ apiBaseUrl = "http://localhost:3001/api" }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style jsx="true">{`
         .export-container {
           display: flex;
           align-items: center;
           gap: 12px;
           position: relative;
-          background: var(--surface);
+          background: var(--glass-bg);
+          backdrop-filter: var(--glass-blur-light);
+          -webkit-backdrop-filter: var(--glass-blur-light);
           padding: 6px 12px;
-          border: 1px solid var(--border);
+          border: 1px solid var(--glass-border);
           border-radius: var(--radius-sm);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+          box-shadow: var(--glass-shadow);
         }
 
         .date-range {
@@ -205,8 +207,8 @@ const ExportToExcel = ({ apiBaseUrl = "http://localhost:3001/api" }) => {
 
         .date-input {
           appearance: none;
-          background: var(--bg);
-          border: 1px solid var(--border);
+          background: rgba(15, 23, 42, 0.55);
+          border: 1px solid var(--glass-border);
           color: var(--text);
           border-radius: 6px;
           padding: 6px 10px;
@@ -248,7 +250,7 @@ const ExportToExcel = ({ apiBaseUrl = "http://localhost:3001/api" }) => {
         .export-button:hover:not(:disabled) {
           background: #059669;
           transform: translateY(-1px);
-          box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
         .export-button:active:not(:disabled) {
