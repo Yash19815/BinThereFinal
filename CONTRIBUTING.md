@@ -9,12 +9,17 @@ Thank you for your interest in contributing to **BinThere** — a real-time IoT 
 ```
 BinThere-Dashboard/
 ├── client/          # React frontend (dashboard UI)
+│   └── src/components/
+│       ├── dashboard/   # Domain-specific components
+│       ├── layout/      # Shell and navigation
+│       ├── modals/      # Popups and history charts
+│       └── ui/          # Generic glassmorphism atoms
 ├── server/          # Node.js backend (REST API + WebSocket)
-├── ESP32_Code/      # Arduino/ESP32 firmware
-├── python_scripts/  # Python utilities and data scripts
-├── serial_monitor/  # Serial communication monitor
-├── ota_check/       # OTA update check scripts
-└── scripts/         # Misc helper scripts
+├── ESP32_Code/      # Arduino/ESP32 firmware (Time-of-Flight + NVS)
+├── python_scripts/  # Python utilities for ML testing
+├── serial_monitor/  # Standalone serial debugging tool
+├── ota_check/       # OTA update monitoring scripts
+└── scripts/         # Automation (setup.js, etc.)
 ```
 
 ---
@@ -37,21 +42,21 @@ BinThere-Dashboard/
    cd BinThere-Dashboard
    ```
 
-2. **Install dependencies:**
+2. **Automated Configuration:**
+
+   Run the setup script to install all dependencies (client & server) and initialize your environment variables automatically.
 
    ```bash
-   npm install          # root dependencies
-   cd client && npm install
-   cd ../server && npm install
+   npm run install:all
+   npm run configure
    ```
 
-3. **Set up environment variables:**
-   - Copy `.env.example` to `.env` in both `client/` and `server/` directories
-   - Fill in your Firebase / MQTT / database credentials
+   _Note: `npm run configure` will create your `.env` files and seed a default admin user and dustbin in the SQLite database._
 
-4. **Run the development servers:**
+3. **Run the development servers:**
+
    ```bash
-   # From root
+   # Starts both frontend and backend concurrently
    npm run dev
    ```
 
@@ -75,24 +80,31 @@ BinThere-Dashboard/
 - Test on actual hardware (ESP32 + HC-SR04 / IR sensors) before submitting.
 - Follow the existing code style and comment sensor pin mappings clearly.
 
-### 🖥️ Frontend (React)
+### 🖥️ Frontend (React & Design)
 
-- All UI code lives in `client/src/`.
-- Use functional components and React hooks.
-- Keep components small and reusable.
-- Follow existing naming conventions (PascalCase for components, camelCase for variables).
+- **Aesthetic Direction**: All UI must follow the **"Frosted Control Room"** (Glassmorphism) theme. Avoid generic AI UI patterns.
+- **Glass Tokens**: Use the provided design tokens exclusively:
+  - `--glass-bg`: Translucent background.
+  - `--glass-blur`: Backdrop filter blur (clamp to `20px`).
+  - `--glass-border`: Subtle semi-transparent borders.
+- **Waste Category Colors**:
+  - **Dry**: Use HSL values for `#34d399` (Emerald).
+  - **Wet**: Use HSL values for `#60a5fa` (Azure).
+- **Performance**: Use `React.memo` for real-time SVG updates. Ensure blurs are disabled on mobile (`max-width: 640px`) to maintain 60fps.
 
-### 🔧 Backend (Node.js)
+### 🔧 Backend (Node.js & SQLite)
 
-- API routes go in `server/routes/`, controllers in `server/controllers/`.
-- Validate all incoming data before processing.
-- Avoid committing secrets — use environment variables.
+- **Storage**: We use **SQLite** with the `better-sqlite3` driver. Manual SQL migrations should be added to `server/schema.sql`.
+- **Dynamic Bins**: Do not hardcode bin IDs. Use the dynamic `/api/bins` endpoint.
+- **Security**: Hardware devices MUST use the `X-Device-Key` header for measurement POSTs.
 
-### 🐍 Python Scripts
+### 🤖 ESP32 & Hardware Simulation
 
-- Scripts in `python_scripts/` should be standalone and well-documented.
-- Use `argparse` for CLI arguments where applicable.
-- Prefer `requirements.txt` entries for any new dependencies.
+- **Firmware**: Keep core logic in `ESP32_Code/`. Use Time-of-Flight (TOF) sensor logic where possible.
+- **Simulation**: Test your changes without hardware using the provided PowerShell simulating script:
+  ```powershell
+  ./python_scripts/test-sensor.ps1 -BinId 1 -Compartment dry -Level 75
+  ```
 
 ---
 
@@ -125,20 +137,28 @@ BinThere-Dashboard/
 
 ---
 
-## ✅ Code Style Guidelines
+## ✅ Code style & Documentation
 
-| Area             | Convention                                                   |
-| ---------------- | ------------------------------------------------------------ |
-| JavaScript/React | ESLint + Prettier (run `npm run lint`)                       |
-| Python           | PEP 8 (use `black` or `flake8`)                              |
-| C++ (ESP32)      | Google C++ style, 2-space indent                             |
-| Commits          | [Conventional Commits](https://www.conventionalcommits.org/) |
+| Area             | Convention                                                       |
+| ---------------- | ---------------------------------------------------------------- |
+| JavaScript/React | ESLint + Prettier (Standard: Frosted Glass UI)                   |
+| Commit Messages  | [Conventional Commits](https://www.conventionalcommits.org/)     |
+| **Changelog**    | **MANDATORY**: Update `CHANGELOG.md` for every single change.    |
+| **README**       | **MANDATORY**: Sync `README.md` if setup or API surface changes. |
+
+### 📊 Changelog Protocol
+
+When updating `CHANGELOG.md`, follow the existing table format:
+
+1. Increment **Version** (SemVer).
+2. Category Emojis: 🎨 UI, ✨ Feature, 🔧 Fix, 🤖 Hardware, 📊 Export, 📝 Docs.
+3. Add a detailed summary in the collapsible details section.
 
 ---
 
 ## 🔐 Security
 
-Do **not** commit API keys, Firebase credentials, Wi-Fi passwords, or any secrets. Use `.env` files (already in `.gitignore`). If you discover a security vulnerability, please email the maintainer privately instead of opening a public issue.
+Do **not** commit API keys, database files (`.db`), or secrets. The `.env` template is provided via `npm run configure`. If you discover a security vulnerability, please email the maintainer privately.
 
 ---
 

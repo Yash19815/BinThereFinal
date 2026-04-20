@@ -2,6 +2,7 @@
 
 | Version | Date       | Type          | Summary                                                                                          |
 | ------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| v2.4.2  | 2026-04-21 | 📝 Docs       | Documentation Overhaul: Modernized CONTRIBUTING.md with automated setup and UI tokens             |
 | v2.4.1  | 2026-04-20 | ✨ Feature    | Default Bin Seeding: Ensures 1 dustbin exists on first run while supporting dynamic additions    |
 | v2.4.0  | 2026-04-20 | 📊 Export     | Premium Reporting: Executive Summaries, predictive maintenance analytics, and date presets       |
 | v2.3.1  | 2026-04-19 | 📝 Docs       | Updated License from MIT to Apache 2.0                                                           |
@@ -23,6 +24,25 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.4.2] — 2026-04-21
+
+### Summary
+
+Complete overhaul of the project contribution guidelines to align with the v2.4+ infrastructure, including automated environment configuration, glassmorphism design tokens, and mandatory documentation protocols.
+
+### Added
+
+- **Modernized Contributing Guide**: Refactored `CONTRIBUTING.md` to prioritize the automated `npm run configure` setup workflow and codify the "Frosted Control Room" aesthetic as a technical requirement.
+- **UI/UX Standards**: Explicitly defined HSL color tokens for Dry/Wet waste categories and implemented mandatory performance constraints for backdrop filters.
+- **Documentation Enforcement**: Codified the **Automated Changelog Protocol** and mandatory `README.md` synchronization as part of the "Definition of Done" for all Pull Requests.
+
+### Changed
+
+- **Setup Workflow**: Replaced manual environment variable configuration and multi-directory `npm install` steps with centralized `install:all` and `configure` scripts.
+- **Hardware Simulation Guide**: Integrated instructions for using `test-sensor.ps1` for local hardware logic verification without physical ESP32 modules.
 
 ---
 
