@@ -21,14 +21,14 @@ param (
 #
 # WHAT IT DOES:
 #   Every 2 seconds, sends a POST to /api/bins/<id>/measurement with:
-#     raw_distance_cm (random 5-50 cm) -> mapped to Dry Waste
-#     raw_distance_cm (random 5-50 cm) -> mapped to Wet Waste
+#     raw_distance_cm (random 2-25 cm) -> mapped to Dry Waste
+#     raw_distance_cm (random 2-25 cm) -> mapped to Wet Waste
 #
 #   The server converts distance to fill % using:
-#     fill % = ((max_height_cm - distance_cm) / max_height_cm) * 100
-#   With max_height_cm = 50:
-#     distance=5  cm -> ~90 % full   (near sensor = nearly full)
-#     distance=50 cm ->   0 % full   (far from sensor = empty)
+#     fill % = (distance_cm / max_height_cm) * 100
+#   With max_height_cm = 25:
+#     distance=2  cm -> 8 % full     (Small distance = Nearly Empty)
+#     distance=25 cm -> 100 % full   (Large distance = Completely Full)
 #
 # OUTPUT:
 #   [HH:mm:ss] Dry: <dist> cm (<fill>%)  |  Wet: <dist> cm (<fill>%)
@@ -59,10 +59,9 @@ if (-not $DeviceKey) { Write-Warning "[WARN] No DEVICE_API_KEY found in server/.
 Write-Host "Press Ctrl+C to stop`n" -ForegroundColor Yellow
 
 while ($true) {
-    # Generate random distances in the HC-SR04 reliable range (5-50 cm)
-    # The fractional part (.99 * random) adds sub-centimetre precision
-    $sensor1 = [math]::Round(((Get-Random -Minimum 5 -Maximum 50) + ((Get-Random) * 0.99)), 2)
-    $sensor2 = [math]::Round(((Get-Random -Minimum 5 -Maximum 50) + ((Get-Random) * 0.99)), 2)
+    # Generate random distances in the 2-25 cm range (bin height = 25cm)
+    $sensor1 = [math]::Round(((Get-Random -Minimum 2 -Maximum 25) + ((Get-Random) * 0.99)), 2)
+    $sensor2 = [math]::Round(((Get-Random -Minimum 2 -Maximum 25) + ((Get-Random) * 0.99)), 2)
 
     $headers = @{}
     if ($DeviceKey) {

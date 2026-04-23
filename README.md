@@ -25,7 +25,7 @@ BinThere is a high-fidelity, real-time monitoring ecosystem designed for smart w
 ### 📊 Advanced Analytics
 
 - **Fill-Cycle Intelligence**: Automatically detects and records "Fill Events" when a bin is emptied and subsequently refilled.
-- **Time-Series Data**: Interactive trend charts supporting 7, 14, and 30-day historical views.
+- **Fleet Utilization Analytics**: Integrated 7-day historical trend chart tracking aggregate fill levels across the entire bin network.
 - **Peak Hours Heatmap**: A 24x7 density matrix visualizing waste accumulation patterns throughout the week.
 - **Precise History**: Deep-dive into the last 50 measurements for any specific bin with micro-trendline visualizations.
 
@@ -40,8 +40,6 @@ BinThere is a high-fidelity, real-time monitoring ecosystem designed for smart w
 
 - **Excel Intelligence**: Premium executive reports with IST timestamping, KPI summaries, predictive maintenance forecasting, and recursive data tracking.
 - **Date-Range Filtering**: Export specific temporal windows using one-tap presets (Today, 7D, 30D) or custom date pickers.
-
----
 
 ---
 
@@ -160,7 +158,8 @@ Requires `Authorization: Bearer <token>` or `X-Device-Key: <key>`.
 | `PATCH`  | `/api/bins/:id`             | Update bin metadata (e.g., location)     |
 | `DELETE` | `/api/bins/:id`             | Remove a bin and cascade delete data     |
 | `POST`   | `/api/bins/:id/measurement` | Record per-compartment reading           |
-| `GET`    | `/api/export/excel`         | Multi-sheet data export (IST)            |
+| `GET`    | `/api/export/excel`            | Multi-sheet data export (IST)            |
+| `GET`    | `/api/analytics/fleet-history` | 7-day fleet-wide utilization trends      |
 
 ---
 
@@ -226,7 +225,6 @@ curl http://localhost:3001/api/health
 
 - 📄 **[Export System](./EXPORT_FEATURE_GUIDE.md)**: Detailed guide for IST-localized Excel reporting.
 - 📄 **[Contributing Guidelines](./CONTRIBUTING.md)**: Standards for adding features and maintaining code quality.
-
 
 ---
 

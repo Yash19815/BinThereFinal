@@ -2,7 +2,13 @@
 
 | Version | Date       | Type          | Summary                                                                                           |
 | ------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| v2.7.0  | 2026-04-23 | 🔧 Fix         | Resolved Export API 404 and expanded UI visuals                                                   |
+| v2.6.0  | 2026-04-23 | 🔧 Fix         | Logic Inversion: Small distance now maps to Empty; Restored Traffic Light (G/Y/R) visuals          |
+| v2.5.2  | 2026-04-23 | 🎨 UI         | Color Refinement: Restored waste-type identity (Blue/Green) with status-aware alert transitions    |
+| v2.5.1  | 2026-04-23 | 🪄 Magic      | High-Fidelity Visual Refinement: 3D glass cylinders, kinetic shimmer, and status-aware glow auras |
+| v2.5.0  | 2026-04-23 | 🎨 UI         | Frosted Control Room: Redesigned dashboard hero, industrial bin cards, and sidebar export tool |
 | v2.4.4  | 2026-04-23 | 🚀 Update     | Sequential Startup & Advanced Logging: Backend-first initialization and comprehensive event logs  |
+
 | v2.4.3  | 2026-04-21 | 🎨 UI         | Premium Dialogs: Replaced browser alerts/prompts with a "Frosted Control Room" glassmorphic modal |
 | v2.4.2  | 2026-04-21 | 📝 Docs       | Documentation Overhaul: Modernized CONTRIBUTING.md with automated setup and UI tokens             |
 | v2.4.1  | 2026-04-20 | ✨ Feature    | Default Bin Seeding: Ensures 1 dustbin exists on first run while supporting dynamic additions     |
@@ -27,9 +33,110 @@ All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+
+---
+
+## [v2.7.0] — 2026-04-23
+### Summary
+Emergency patch to resolve Excel reporting connectivity and finalize industrial UI proportions, including a major redesign of the fleet analytics visualization.
+
+### Fixed
+- **Export API Connectivity**: Fixed `404 Not Found` error on Excel report generation by correcting the `apiBaseUrl` routing in `App.jsx`.
+- **UI Proportions**: Increased `CompartmentPanel` fill-tube height to **160px** (from 110px) to enhance operational legibility and satisfy "industrial scale" requirements.
+- **Chart Overshoot Clamping**: Fixed an issue where the smooth curve would "dip" into negative values when approaching 0% by clamping Bezier control points to the chart floor.
+
+### Changed
+- **Chart Card Layout**: Redesigned the `FleetUtilizationChart` to use a "fill-card" layout where the trend line occupies the full card width, with the circular KPI repositioned as a compact overlay in the top-right corner.
+
+### Added
+- **Visual Curve Refinement**: Upgraded `FleetUtilizationChart` with a cubic Bezier smoothing algorithm, replacing the polygonal line with a smooth, fluid trend line.
+
+### Hardware
+- **Sensor Calibration**: Verified the **25cm** bin height mapping where 2cm = Empty (8%) and 25cm = Full (100%), matching bottom-mount logic.
+
+## [v2.6.0] — 2026-04-23
+
+### Summary
+
+Inverted the core sensor logic to align with specific hardware mounting configurations where a smaller distance measurement indicates an empty container. Additionally, restored the intuitive Traffic Light (Green-Yellow-Red) visual system and significantly increased the vertical scale of the compartment monitoring cards for better legibility.
+
+### Added
+
+- **Vertical Scaling**: Increased the height of the 3D glass fill tubes from **90px to 160px**, providing nearly double the vertical resolution for real-time monitoring.
+- **Traffic Light Color Logic**: Restored the globally intuitive color hierarchy:
+  - **Green**: Almost Empty (0-49%)
+  - **Yellow**: Medium Fill (50-79%)
+  - **Red**: High/Full Alert (80-100%)
+
+### Changed
+
+- **Distance Logic Inversion**: Refactored the `computeFillLevel` backend function to interpret smaller distances as **Empty** and larger distances as **Full**. This ensures compatibility with bottom-mounted sensors or inverted ultrasonic mapping.
+- **Visual Consistency**: Synchronized the overall fleet efficiency bars to use the same Green-to-Red status progression.
+
+---
+
+## [v2.5.2] — 2026-04-23
+
+### Summary
+
+Refined the color logic of the industrial fill tubes to restore waste-type identity while maintaining critical alert visibility. This update ensures that "Dry" and "Wet" waste compartments are easily distinguishable by their original color schemes (Blue and Green) during normal operation, only transitioning to Red/Orange as they reach critical levels.
+
+### Added
+
+- **Waste-Type Color Restoration**: Re-implemented the project's original color signature: **Blue for Dry Waste** and **Green for Wet Waste**.
+- **Synchronized Status Logic**: Fully aligned the CSS class names with the `themeUtils.js` logic (`low`, `medium`, `high`, `full`), ensuring perfect parity between data thresholds and visual states.
+
+### Changed
+
+- **Adaptive Alert Hierarchy**: Optimized the fill tube gradients to dynamically shift from type-specific colors to a universal **Red Alert** state once the fill level exceeds 95% (as defined by `ALERT_THRESHOLD`).
+- **Enhanced Visual Telemetry**: The overall bin efficiency bar now utilizes a Blue-to-Red progression instead of a simple Green-to-Red, providing better distinction from individual Wet Waste indicators.
+
+---
+
+## [v2.5.1] — 2026-04-23
+
+### Summary
+
+Elevated the dustbin monitoring visuals to a "High-Fidelity" standard by implementing advanced CSS textures and micro-interactions. This update focuses on the "Fill Tube" and "Average Fill" indicators, transforming them from static bars into interactive, 3D industrial glass components.
+
+### Added
+
+- **High-Fidelity Glass Cylinder (v3)**: Overhauled the `CompartmentPanel` fill indicators with 3D radial shading, floating liquid surface reflections, and industrial tick marks to simulate precision laboratory equipment.
+- **Kinetic Shimmer Spell**: Integrated a "magical" light sweep effect (`.glass-shimmer`) that periodically traverses the monitoring tubes, adding depth and a premium "active" feel.
+- **Status-Aware Glow Auras**: The `BinCard` footer progress bar now features a dynamic neon glow that updates its color (Green/Yellow/Orange/Red) and intensity based on real-time fill metrics.
+
+### Changed
+
+- **Silky-Smooth Transitions**: Upgraded all fill-level animations to use a high-precision `cubic-bezier(0.34, 1.56, 0.64, 1)` easing, providing a responsive, spring-like physical reaction to data updates.
+- **Industrial Scale Integration**: Added 5-point measurement ticks to the compartment visuals to improve data legibility and reinforce the utilitarian aesthetic.
+
+---
+
+## [v2.5.0] — 2026-04-23
+
+### Summary
+
+Successfully transitioned the platform to a premium "Frosted Control Room" aesthetic with a high-fidelity operational dashboard. This update introduces a restructured 2fr/1fr hero layout, advanced fleet-wide utilization analytics, an industrial redesign of bin monitoring cards, and a human-readable audit trail for enhanced operational transparency.
+
+### Added
+
+- **Fleet Utilization Analytics**: Integrated a new 7-day historical line chart that tracks aggregate fill levels across the entire bin network, enabling trend identification and capacity planning.
+- **Industrial Bin Card Redesign**: Overhauled the `BinCard` and `CompartmentPanel` with a high-precision industrial aesthetic. Replaced all emojis with `lucide-react` iconography and introduced high-fidelity "Fill Tube" visuals for compartment monitoring.
+- **Human-Readable Audit Logs**: Refactored the server logging engine to translate technical HTTP strings into plain-English event descriptions (e.g., "Infrastructure update: Registered a new waste container").
+- **Premium Calendar Selection**: Integrated a custom-built, glassmorphic `CalendarPicker` for date selection in exports.
+- **Range Metadata Endpoint**: Added `/api/export/metadata` to the backend for dynamic temporal validation.
+
+### Changed
+
+- **Dashboard Hero Redesign**: Overhauled the main layout into a professional **2fr/1fr grid**. The primary section features live fleet analytics, while the sidebar houses compact administrative tools and report generation.
+- **Magnetic Action Controls**: Consolidated "Add Dustbin" and "Refresh" controls into high-impact, animated button states. `BinCard` actions (Edit/Delete) now utilize magnetic entry transitions and industrial iconography.
+- **Export Sidebar Refactor**: Re-engineered the `ExportToExcel` component into a compact, vertical sidebar tool to optimize screen real estate and align with the industrial control aesthetic.
+- **Smart Date Constraints**: Implemented frontend validation preventing exports beyond a 365-day window and restricting selections to actual database archive starts.
+
 ---
 
 ## [v2.4.4] — 2026-04-23
+
 
 ### Summary
 

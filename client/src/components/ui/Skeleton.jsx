@@ -21,46 +21,24 @@ export default function Skeleton({
 
 export function BinCardSkeleton() {
   return (
-    <div
-      className="bin-card skeleton-container"
-      style={{
-        padding: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "8px",
-      }}
-    >
-      <div
-        className="bin-card-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
-        <div style={{ flex: 1 }}>
+    <div className="bin-card skeleton-container" style={{ cursor: "default" }}>
+      <div className="bin-card-header">
+        <Skeleton width="44px" height="44px" borderRadius="10px" />
+        <div className="bin-meta" style={{ flex: 1 }}>
           <Skeleton
-            width="120px"
-            height="24px"
-            style={{ marginBottom: "8px" }}
+            width="60%"
+            height="20px"
+            style={{ marginBottom: "8px", borderRadius: "4px" }}
           />
-          <Skeleton width="200px" height="16px" />
+          <Skeleton width="40%" height="14px" borderRadius="4px" />
         </div>
-        <Skeleton width="24px" height="24px" borderRadius="12px" />
       </div>
-      <div
-        className="compartments-row"
-        style={{ display: "flex", gap: "12px" }}
-      >
-        <div style={{ flex: 1 }}>
-          <Skeleton width="100%" height="80px" borderRadius="6px" />
-        </div>
-        <div style={{ flex: 1 }}>
-          <Skeleton width="100%" height="80px" borderRadius="6px" />
-        </div>
+      <div className="compartments-row">
+        <Skeleton width="100%" height="120px" borderRadius="12px" />
+        <Skeleton width="100%" height="120px" borderRadius="12px" />
+      </div>
+      <div className="bin-card-footer" style={{ borderTop: "none" }}>
+        <Skeleton width="100%" height="4px" borderRadius="100px" />
       </div>
     </div>
   );

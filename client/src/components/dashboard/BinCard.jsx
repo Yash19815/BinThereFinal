@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Trash2, MapPin, Edit3, AlertTriangle, Box } from "lucide-react";
 import CompartmentPanel from "./CompartmentPanel";
 import { ALERT_THRESHOLD } from "../../utils/constants";
 import { getLevel } from "../../utils/themeUtils";
@@ -27,60 +28,71 @@ function BinCard({
       className={`bin-card ${isAlert ? "bin-alert" : ""}`}
       onClick={() => onBinClick(binId)}
     >
+      {isAlert && (
+        <div className="alert-indicator">
+          <AlertTriangle size={18} />
+        </div>
+      )}
+
       <div className="bin-card-header">
-        <div className="bin-icon">🗑️</div>
+        <div className="bin-icon-v2">
+          <Box size={20} />
+        </div>
         <div className="bin-meta">
           <h2 className="bin-name">{binName}</h2>
           <div className="location-row">
-            <p className="bin-location">📍 {binLocation}</p>
+            <p className="bin-location">
+              <MapPin size={12} />
+              {binLocation}
+            </p>
             <div className="bin-actions">
               <button
-                className="edit-loc-btn"
+                className="action-icon-btn"
                 onClick={(e) => {
                   e.stopPropagation();
                   onEditLocation(binId, binLocation);
                 }}
                 title="Edit Location"
               >
-                ✏️
+                <Edit3 size={14} />
               </button>
               <button
-                className="delete-bin-btn"
+                className="action-icon-btn delete"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteBin(binId, binName);
                 }}
                 title="Delete Dustbin"
               >
-                🗑️
+                <Trash2 size={14} />
               </button>
             </div>
           </div>
         </div>
-        {isAlert && <span className="alert-chip">⚠ Alert</span>}
       </div>
 
       <div className="compartments-row">
         <CompartmentPanel
-          label="🌫 Dry Waste"
+          label="Dry Waste"
           pct={dryPct}
           rawDistance={dryRawDistance}
           lastUpdated={dryUpdated}
+          type="dry"
         />
-        <div className="compartment-divider" />
         <CompartmentPanel
-          label="💧 Wet Waste"
+          label="Wet Waste"
           pct={wetPct}
           rawDistance={wetRawDistance}
           lastUpdated={wetUpdated}
+          type="wet"
         />
       </div>
 
       <div className="bin-card-footer">
-        <span className="overall-label">Avg fill</span>
-        <div className="overall-bar-wrap">
+        <span className="overall-label">Average Fill</span>
+        <div className="overall-bar-wrap-v2">
           <div
-            className={`overall-bar ${getLevel(avgPct)}`}
+            className={`overall-bar-v2 ${getLevel(avgPct)}`}
             style={{ width: `${avgPct}%` }}
           />
         </div>

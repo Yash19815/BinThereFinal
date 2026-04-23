@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import { useAuth } from "./AuthContext.jsx";
 import LoginPage from "./LoginPage.jsx";
+import { Plus, RefreshCw } from "lucide-react";
 import ExportToExcel from "./components/ExportToExcel";
 
 import Header from "./components/layout/Header";
-import SummaryStats from "./components/dashboard/SummaryStats";
 import AnalyticsSection from "./components/dashboard/AnalyticsSection";
 import PeakHoursHeatmap from "./components/dashboard/PeakHoursHeatmap";
+import FleetUtilizationChart from "./components/dashboard/FleetUtilizationChart";
 import BinCard from "./components/dashboard/BinCard";
 import HistoryModal from "./components/modals/HistoryModal";
 import PromptModal from "./components/modals/PromptModal";
@@ -44,9 +45,16 @@ export default function App() {
     fields: [],
     onSubmit: () => {},
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const closePrompt = () =>
     setPromptConfig((prev) => ({ ...prev, isOpen: false }));
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshBins();
+    setTimeout(() => setIsRefreshing(false), 600);
+  };
 
   const openDetail = useCallback(
     async (binId) => {
@@ -135,7 +143,6 @@ export default function App() {
     [deleteBin],
   );
 
-  // Show nothing while checking auth session
   if (authLoading) {
     return (
       <div className="auth-loading">
@@ -144,7 +151,6 @@ export default function App() {
     );
   }
 
-  // Show login page if not authenticated
   if (!user) {
     return <LoginPage />;
   }
@@ -158,28 +164,31 @@ export default function App() {
       <main className="main">
         <div className="page-title-row">
           <div>
-            <h1 className="page-title">Smart Dustbin Monitor</h1>
+            <h1 className="page-title">Operational Dashboard</h1>
             <p className="page-sub">
-              Real-time fill levels via ultrasonic sensors
+              Fleet intelligence & sensor monitoring system
             </p>
           </div>
           <div className="page-title-actions">
-            <button className="add-bin-btn" onClick={handleAddBin}>
-              ➕ Add Dustbin
-            </button>
-            <ExportToExcel />
             <button
-              className="refresh-btn"
-              onClick={refreshBins}
-              title="Refresh"
+              className={`refresh-btn ${isRefreshing ? "refreshing" : ""}`}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              title="Refresh Data"
             >
-              ↻ Refresh
+              <RefreshCw size={18} className={isRefreshing ? "spin" : ""} />
+              <span>Refresh</span>
+            </button>
+            <button className="add-bin-btn" onClick={handleAddBin}>
+              <Plus size={18} />
+              <span>Add Dustbin</span>
             </button>
           </div>
         </div>
 
-        <div className="summary-stats">
-          <SummaryStats token={token} refreshKey={analyticsKey} />
+        <div className="dashboard-hero">
+          <FleetUtilizationChart token={token} refreshKey={analyticsKey} />
+          <ExportToExcel apiBaseUrl={`${API_URL}/api`} />
         </div>
 
         {binsLoading && bins.length === 0 ? (
@@ -197,17 +206,17 @@ export default function App() {
             description="Waiting for sensor data. Make sure the backend is running and the ESP32 is sending data."
           >
             <button className="add-bin-btn" onClick={handleAddBin}>
-              ➕ Add Dustbin
+              <Plus size={18} />
+              <span>Add Dustbin</span>
             </button>
           </EmptyState>
         ) : (
           <>
-            {/* Bin Selector for Analytics */}
             <div className="bin-selector-container">
               <div className="selector-meta">
-                <label className="selector-label">Analytics Target</label>
+                <label className="selector-label">Unit Analysis Target</label>
                 <p className="selector-sub">
-                  Switching reports for Garbage Collection & Peak Hours
+                  Focus analytics on specific infrastructure units
                 </p>
               </div>
               <select
@@ -256,6 +265,7 @@ export default function App() {
           </>
         )}
       </main>
+
 
       {selectedBin && (
         <HistoryModal

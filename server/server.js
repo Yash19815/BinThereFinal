@@ -326,7 +326,7 @@ function recordFillCycle(binId, compartment, fillLevel, timestamp) {
  * @returns {number} Fill percentage rounded to 2 decimal places
  */
 function computeFillLevel(rawDistanceCm, maxHeightCm) {
-  const fill = ((maxHeightCm - rawDistanceCm) / maxHeightCm) * 100;
+  const fill = (rawDistanceCm / maxHeightCm) * 100;
   return Math.min(100, Math.max(0, parseFloat(fill.toFixed(2))));
 }
 
@@ -423,14 +423,43 @@ const clients = new Set();
 app.use(cors());
 app.use(express.json());
 
+// ── Human-Readable Logging Mapper ───────────────────────────────────────────
+const getHumanReadableLog = (method, url, statusCode) => {
+  const routes = [
+    { pattern: /^\/api\/auth\/login$/, message: "System access granted: Administrator logged in" },
+    { pattern: /^\/api\/auth\/register$/, message: "Security update: A new system user was created" },
+    { pattern: /^\/api\/auth\/me$/, message: "Session validated: User identity confirmed" },
+    { pattern: /^\/api\/bins$/, method: "GET", message: "Fleet status check: Synchronized all container data" },
+    { pattern: /^\/api\/bins$/, method: "POST", message: "Infrastructure update: Registered a new waste container" },
+    { pattern: /^\/api\/bins\/\d+$/, method: "DELETE", message: "Infrastructure update: Removed a container from the fleet" },
+    { pattern: /^\/api\/bins\/\d+$/, method: "PATCH", message: "Configuration update: Modified container properties" },
+    { pattern: /^\/api\/analytics\/utilization$/, message: "Intelligence report: Analyzed overall campus utilization" },
+    { pattern: /^\/api\/analytics\/fleet-history$/, message: "Intelligence report: Reviewed 7-day historical performance" },
+    { pattern: /^\/api\/bins\/\d+\/analytics$/, message: "Intelligence report: Analyzed specific container efficiency" },
+    { pattern: /^\/api\/bins\/\d+\/heatmap$/, message: "Intelligence report: Visualized peak activity patterns" },
+    { pattern: /^\/api\/bins\/\d+$/, method: "GET", message: "Data inspection: Reviewed detailed container logs" },
+    { pattern: /^\/api\/bins\/\d+\/measurement$/, message: "Telemetry update: Recorded real-time sensor metrics" },
+    { pattern: /^\/api\/sensor-data$/, message: "Hardware telemetry: Processed automated sensor feed" },
+    { pattern: /^\/api\/export\/excel(\?.*)?$/, message: "Data extraction: Generated comprehensive Excel audit report" },
+    { pattern: /^\/api\/export\/metadata$/, message: "System check: Validated historical data availability" },
+    { pattern: /^\/api\/logs\/event$/, message: "Interaction log: Recorded a manual dashboard action" },
+  ];
+
+  const match = routes.find((r) => r.pattern.test(url) && (!r.method || r.method === method));
+
+  const statusMsg = statusCode >= 400 ? `(Operation failed with status ${statusCode})` : "";
+  return match ? `${match.message} ${statusMsg}`.trim() : `${method} ${url} -> ${statusCode}`;
+};
+
 // ── Request Logger Middleware ────────────────────────────────────────────────
 app.use((req, res, next) => {
   const timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-  
+
   res.on("finish", () => {
     // Identity is checked on 'finish' so that auth middleware has had time to set req.user
-    const identity = req.user ? `[User: ${req.user.username}]` : "[Guest]";
-    console.log(`[${timestamp}] ${identity} ${req.method} ${req.originalUrl} -> ${res.statusCode}`);
+    const identity = req.user ? `[${req.user.username}]` : "[Guest]";
+    const action = getHumanReadableLog(req.method, req.originalUrl, res.statusCode);
+    console.log(`[${timestamp}] ${identity}: ${action}`);
   });
   next();
 });
@@ -688,6 +717,43 @@ app.get("/api/analytics/utilization", requireAuth, (req, res) => {
       utilization_score:
         row && row.avgFill !== null ? Math.round(row.avgFill) : 0,
     });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/**
+ * GET /api/analytics/fleet-history
+ * Returns the average fill level across the entire fleet for the last 7 days.
+ */
+app.get("/api/analytics/fleet-history", requireAuth, (req, res) => {
+  try {
+    const days = 7;
+    const allDays = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      allDays.push(d.toISOString().slice(0, 10));
+    }
+
+    const rows = db.prepare(`
+      SELECT date(timestamp) as day, AVG(fill_level_percent) as avgFill
+      FROM measurements
+      WHERE timestamp >= datetime('now', '-7 days')
+      GROUP BY day
+      ORDER BY day ASC
+    `).all();
+
+    const dataMap = {};
+    rows.forEach(r => { dataMap[r.day] = Math.round(r.avgFill); });
+
+    const labels = allDays.map(d => {
+      const date = new Date(d + "T00:00:00");
+      return date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+    });
+    const points = allDays.map(d => dataMap[d] ?? 0);
+
+    res.json({ status: "success", labels, points });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
   }

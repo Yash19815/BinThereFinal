@@ -57,6 +57,23 @@ function formatIstDateTime(isoString) {
 }
 
 /**
+ * GET /api/export/metadata
+ * Returns metadata for export validation (e.g., earliest data point).
+ */
+router.get("/export/metadata", (req, res) => {
+  const db = new Database(DB_PATH, { readonly: true });
+  try {
+    const row = db.prepare("SELECT MIN(timestamp) as earliest FROM measurements").get();
+    res.json({ status: "success", earliestDate: row?.earliest || null });
+  } catch (error) {
+    console.error("Metadata fetch error:", error);
+    res.status(500).json({ status: "error", message: "Failed to fetch export metadata" });
+  } finally {
+    db.close();
+  }
+});
+
+/**
  * GET /api/export/excel
  * Exports bins + filtered measurements (+ filtered fill_cycles) to Excel.
  *
