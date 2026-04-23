@@ -423,6 +423,18 @@ const clients = new Set();
 app.use(cors());
 app.use(express.json());
 
+// ── Request Logger Middleware ────────────────────────────────────────────────
+app.use((req, res, next) => {
+  const timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  
+  res.on("finish", () => {
+    // Identity is checked on 'finish' so that auth middleware has had time to set req.user
+    const identity = req.user ? `[User: ${req.user.username}]` : "[Guest]";
+    console.log(`[${timestamp}] ${identity} ${req.method} ${req.originalUrl} -> ${res.statusCode}`);
+  });
+  next();
+});
+
 // ── Auth Routes (public) ─────────────────────────────────────────────────────
 
 /**
@@ -445,12 +457,14 @@ app.post("/api/auth/login", (req, res) => {
     .get(username);
 
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    console.warn(`[AUTH] Failed login attempt for user: ${username}`);
     return res
       .status(401)
       .json({ status: "error", message: "Invalid credentials" });
   }
 
   const token = signToken(user);
+  console.log(`[AUTH] New login detected: ${user.username} (Role: ${user.role})`);
   res.json({
     status: "success",
     token,
@@ -773,6 +787,8 @@ app.get("/api/bins/:id/heatmap", requireAuth, (req, res) => {
     return res.status(404).json({ status: "error", message: "Bin not found" });
 
   const compartment = req.query.compartment || null; // optional filter: 'dry' | 'wet'
+  const wasteType = compartment ? `${compartment} waste` : "all waste types";
+  console.log(`[ANALYTICS] Heatmap data requested: ${wasteType} for bin ID ${binId}`);
 
   const whereClause = compartment
     ? "WHERE bin_id = ? AND compartment = ?"
@@ -972,6 +988,19 @@ app.post("/api/sensor-data", (req, res) => {
   broadcast({ type: "update", bin: updatedBin });
 
   res.json({ status: "success", message: "Data received", data: updatedBin });
+});
+
+// ── UI Logging ───────────────────────────────────────────────────────────────
+/**
+ * POST /api/logs/event
+ * Allows the frontend to record significant UI actions in the server logs.
+ */
+app.post("/api/logs/event", requireAuth, (req, res) => {
+  const { event, details } = req.body;
+  const timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  const user = req.user ? req.user.username : "unknown";
+  console.log(`[${timestamp}] [EVENT] ${user}: ${event} - ${details}`);
+  res.json({ status: "success" });
 });
 
 // ── Excel Export Routes ──────────────────────────────────────────────────────

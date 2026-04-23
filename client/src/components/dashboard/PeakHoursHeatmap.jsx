@@ -25,6 +25,19 @@ export default function PeakHoursHeatmap({ binId, token }) {
       link.href = dataUrl;
       link.download = `heatmap-export-${Date.now()}.png`;
       link.click();
+
+      // Log the export to the server
+      fetch(`${API_URL}/api/logs/event`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          event: "Heatmap Image Export",
+          details: `${compartment || "all"} waste for bin ID ${binId}`,
+        }),
+      }).catch((err) => console.error("Event logging failed", err));
     } catch (err) {
       console.error("Export failed", err);
     }

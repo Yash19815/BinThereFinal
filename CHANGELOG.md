@@ -1,30 +1,50 @@
 # Changelog
 
-| Version | Date       | Type          | Summary                                                                                          |
-| ------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| Version | Date       | Type          | Summary                                                                                           |
+| ------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| v2.4.4  | 2026-04-23 | 🚀 Update     | Sequential Startup & Advanced Logging: Backend-first initialization and comprehensive event logs  |
 | v2.4.3  | 2026-04-21 | 🎨 UI         | Premium Dialogs: Replaced browser alerts/prompts with a "Frosted Control Room" glassmorphic modal |
-| v2.4.2  | 2026-04-21 | 📝 Docs       | Documentation Overhaul: Modernized CONTRIBUTING.md with automated setup and UI tokens            |
-| v2.4.1  | 2026-04-20 | ✨ Feature    | Default Bin Seeding: Ensures 1 dustbin exists on first run while supporting dynamic additions    |
-| v2.4.0  | 2026-04-20 | 📊 Export     | Premium Reporting: Executive Summaries, predictive maintenance analytics, and date presets       |
-| v2.3.1  | 2026-04-19 | 📝 Docs       | Updated License from MIT to Apache 2.0                                                           |
-| v2.3.0  | 2026-04-19 | 🎨 UI         | "Frosted Control Room" glassmorphism overhaul and light theme elimination                        |
-| v2.2.0  | 2026-04-19 | 🎨 UI         | Redesigned Utilization Score card, Export to Excel UI, and native dark-mode icon compatibility   |
-| v2.1.0  | 2026-04-19 | ✨ Feature    | Dynamic dustbin management, contributing guidelines, and ESP32 codebase renaming                 |
-| v2.0.0  | 2026-04-17 | 🚀 Update     | Core infrastructure revamp: automated setup scripts, auto-host detection, OTA monitor, licensing |
-| v1.9.0  | 2026-04-15 | 🎨 UI         | Peak-hours heatmaps, dark-mode styling, Refactored Excel export, DB Purge & web OTA UI           |
-| v1.8.0  | 2026-04-13 | 📝 Docs       | Comprehensive BinThere dashboard, server documentation, and v5.5 code context additions          |
-| v1.7.0  | 2026-03-27 | ✨ Feature    | Local Python integration for ML image endpoint testing and serial monitor terminal improvements  |
-| v1.6.0  | 2026-03-25 | 🤖 Hardware   | Hardware Pipeline v5 roll-out (Web UI, NVS, TOF & servo configuration refactoring)               |
-| v1.5.0  | 2026-03-23 | 📊 Export     | Extensive Excel export reporting, UI implementation, and feature documentation set               |
-| v1.4.0  | 2026-03-19 | 🚀 Launch     | Main backend API launch: authentication, real-time WebSocket layers, SQLite data storage         |
-| v1.3.0  | 2026-03-15 | 🔧 Fix        | WebSocket dynamic host routing and Python dependency specification                               |
-| v1.2.0  | 2026-02-24 | 🔒 Auth       | Platform login integration, token delivery, and fill level analytics aggregation                 |
-| v1.1.0  | 2026-02-23 | 📊 Analytics  | Initial real-time chart implementations and local DB schema architecture set                     |
-| v1.0.0  | 2026-02-17 | 🎉 Initialize | Initial project commit and baseline repository formatting                                        |
+| v2.4.2  | 2026-04-21 | 📝 Docs       | Documentation Overhaul: Modernized CONTRIBUTING.md with automated setup and UI tokens             |
+| v2.4.1  | 2026-04-20 | ✨ Feature    | Default Bin Seeding: Ensures 1 dustbin exists on first run while supporting dynamic additions     |
+| v2.4.0  | 2026-04-20 | 📊 Export     | Premium Reporting: Executive Summaries, predictive maintenance analytics, and date presets        |
+| v2.3.1  | 2026-04-19 | 📝 Docs       | Updated License from MIT to Apache 2.0                                                            |
+| v2.3.0  | 2026-04-19 | 🎨 UI         | "Frosted Control Room" glassmorphism overhaul and light theme elimination                         |
+| v2.2.0  | 2026-04-19 | 🎨 UI         | Redesigned Utilization Score card, Export to Excel UI, and native dark-mode icon compatibility    |
+| v2.1.0  | 2026-04-19 | ✨ Feature    | Dynamic dustbin management, contributing guidelines, and ESP32 codebase renaming                  |
+| v2.0.0  | 2026-04-17 | 🚀 Update     | Core infrastructure revamp: automated setup scripts, auto-host detection, OTA monitor, licensing  |
+| v1.9.0  | 2026-04-15 | 🎨 UI         | Peak-hours heatmaps, dark-mode styling, Refactored Excel export, DB Purge & web OTA UI            |
+| v1.8.0  | 2026-04-13 | 📝 Docs       | Comprehensive BinThere dashboard, server documentation, and v5.5 code context additions           |
+| v1.7.0  | 2026-03-27 | ✨ Feature    | Local Python integration for ML image endpoint testing and serial monitor terminal improvements   |
+| v1.6.0  | 2026-03-25 | 🤖 Hardware   | Hardware Pipeline v5 roll-out (Web UI, NVS, TOF & servo configuration refactoring)                |
+| v1.5.0  | 2026-03-23 | 📊 Export     | Extensive Excel export reporting, UI implementation, and feature documentation set                |
+| v1.4.0  | 2026-03-19 | 🚀 Launch     | Main backend API launch: authentication, real-time WebSocket layers, SQLite data storage          |
+| v1.3.0  | 2026-03-15 | 🔧 Fix        | WebSocket dynamic host routing and Python dependency specification                                |
+| v1.2.0  | 2026-02-24 | 🔒 Auth       | Platform login integration, token delivery, and fill level analytics aggregation                  |
+| v1.1.0  | 2026-02-23 | 📊 Analytics  | Initial real-time chart implementations and local DB schema architecture set                      |
+| v1.0.0  | 2026-02-17 | 🎉 Initialize | Initial project commit and baseline repository formatting                                         |
 
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.4.4] — 2026-04-23
+
+### Summary
+
+Optimized the development workflow by enforcing a sequential startup sequence and implemented a comprehensive server-side logging engine. This ensures backend readiness before frontend connection attempts and provides high-resolution auditing for authentication and data export events.
+
+### Added
+
+- **Advanced Event Logging**: Implemented explicit log hooks for successful and failed login attempts, identified by username and role.
+- **Export Auditing**: Heatmap exports now log the specific waste type (Dry/Wet) and Bin ID, while Excel reports log the requested date range.
+- **Request Logger Middleware**: Integrated a global middleware for the Express backend that tracks every incoming request, including timestamp, user identity (if authenticated), method, path, and status code.
+
+### Changed
+
+- **Sequential Startup**: Updated `package.json` to utilize `wait-on`. The dashboard frontend now waits for the backend port (3001) to be active before initializing, eliminating "Connection Refused" errors on cold starts.
+- **Package Infrastructure**: Integrated `wait-on` as a core development dependency.
 
 ---
 

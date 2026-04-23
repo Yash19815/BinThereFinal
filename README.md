@@ -89,7 +89,7 @@ npm run configure
 
 ### 2. Launch
 
-Start the full-stack development environment (Backend + Dashboard):
+Start the full-stack development environment (Backend + Dashboard). The frontend will automatically wait for the backend server to be fully initialized before launching:
 
 ```bash
 npm run dev

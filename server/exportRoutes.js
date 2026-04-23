@@ -83,6 +83,8 @@ router.get("/export/excel", async (req, res) => {
     const fromUtcIso = from ? istYmdToUtcIso(from, 0, 0, 0, 0) : null;
     const toUtcIso = to ? istYmdToUtcIso(to, 23, 59, 59, 999) : null;
 
+    console.log(`[EXPORT] Excel report requested: range ${from || "all-time"} to ${to || "now"}`);
+
     const measurementConditions = [];
     const measurementParams = [];
     if (fromUtcIso) {
