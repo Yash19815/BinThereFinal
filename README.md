@@ -5,7 +5,10 @@
 [![React](https://img.shields.io/badge/React-18-blue)](https://react.dev/)
 [![ESP32](https://img.shields.io/badge/Hardware-ESP32-red)](https://www.espressif.com/)
 
-BinThere is a high-fidelity, real-time monitoring ecosystem designed for smart waste management. It utilizes ESP32-bound ultrasonic sensors to track fill levels in dual-compartment bins (**Dry Waste** and **Wet Waste**), providing actionable insights through a premium web dashboard.
+BinThere is a high-performance, real-time monitoring ecosystem designed for smart waste management. It utilizes ESP32-bound ultrasonic sensors to track fill levels in dual-compartment bins (**Dry Waste** and **Wet Waste**), providing actionable insights through a premium **"Frosted Control Room"** web dashboard.
+
+> [!IMPORTANT]
+> **Design Language**: The system is exclusively optimized for a **Dark Glassmorphic** aesthetic, utilizing modern CSS tokens, kinetic shimmer effects, and industrial-grade visual telemetry.
 
 > [!TIP]
 > **No hardware? No problem.** Use the included simulation utility to test the full-stack dashboard immediately.
@@ -17,15 +20,15 @@ BinThere is a high-fidelity, real-time monitoring ecosystem designed for smart w
 ### 📡 Real-Time Monitoring
 
 - **WebSocket Synchronization**: Live updates are pushed to the dashboard on every sensor trigger—no manual refreshing required.
-- **Dual-Compartment Visualization**: Individual vertical fill gauges for Dry and Wet waste categories.
-- **Dynamic Status Indicators**: Intelligent color-coding (Green → Yellow → Orange → Red) based on real-time fill density.
+- **Dual-Compartment Visualization**: Individual high-resolution vertical fill gauges (110px height) for Dry and Wet waste categories.
+- **Dynamic Status Indicators**: Intelligent color-coding (Green → Yellow → Red Alert) based on industry-standard waste density thresholds.
 - **Notification Engine**: Integrated alert system (visual badge + toast notifications) for compartments exceeding 80% capacity.
-- **Dynamic Bin Management**: Add, edit, or delete dustbins via high-fidelity glassmorphic modals with instant WebSocket propagation.
+- **Industrial Modals**: High-fidelity glassmorphic dialogs for adding or editing bins with instant state propagation.
 
 ### 📊 Advanced Analytics
 
 - **Fill-Cycle Intelligence**: Automatically detects and records "Fill Events" when a bin is emptied and subsequently refilled.
-- **Fleet Utilization Analytics**: Integrated 7-day historical trend chart tracking aggregate fill levels across the entire bin network.
+- **Fleet Utilization Trends**: A fluid, cubic-Bezier smoothed 7-day historical chart tracking aggregate fill levels across the entire bin network.
 - **Peak Hours Heatmap**: A 24x7 density matrix visualizing waste accumulation patterns throughout the week.
 - **Precise History**: Deep-dive into the last 50 measurements for any specific bin with micro-trendline visualizations.
 
@@ -146,18 +149,18 @@ No authentication required.
 
 Requires `Authorization: Bearer <token>` or `X-Device-Key: <key>`.
 
-| Method   | Path                        | Description                              |
-| :------- | :-------------------------- | :--------------------------------------- |
-| `GET`    | `/api/auth/me`              | Resolve current user profile             |
-| `GET`    | `/api/health`               | System liveness & connection probe       |
-| `GET`    | `/api/bins`                 | Retrieve all bins & current states       |
-| `GET`    | `/api/bins/:id`             | Single bin details + measurement history |
-| `GET`    | `/api/bins/:id/analytics`   | Daily fill-cycle trend data              |
-| `GET`    | `/api/bins/:id/heatmap`     | 24x7 peak hours matrix                   |
-| `POST`   | `/api/bins`                 | Register a new dustbin (Admin)           |
-| `PATCH`  | `/api/bins/:id`             | Update bin metadata (e.g., location)     |
-| `DELETE` | `/api/bins/:id`             | Remove a bin and cascade delete data     |
-| `POST`   | `/api/bins/:id/measurement` | Record per-compartment reading           |
+| Method   | Path                           | Description                              |
+| :------- | :----------------------------- | :--------------------------------------- |
+| `GET`    | `/api/auth/me`                 | Resolve current user profile             |
+| `GET`    | `/api/health`                  | System liveness & connection probe       |
+| `GET`    | `/api/bins`                    | Retrieve all bins & current states       |
+| `GET`    | `/api/bins/:id`                | Single bin details + measurement history |
+| `GET`    | `/api/bins/:id/analytics`      | Daily fill-cycle trend data              |
+| `GET`    | `/api/bins/:id/heatmap`        | 24x7 peak hours matrix                   |
+| `POST`   | `/api/bins`                    | Register a new dustbin (Admin)           |
+| `PATCH`  | `/api/bins/:id`                | Update bin metadata (e.g., location)     |
+| `DELETE` | `/api/bins/:id`                | Remove a bin and cascade delete data     |
+| `POST`   | `/api/bins/:id/measurement`    | Record per-compartment reading           |
 | `GET`    | `/api/export/excel`            | Multi-sheet data export (IST)            |
 | `GET`    | `/api/analytics/fleet-history` | 7-day fleet-wide utilization trends      |
 
@@ -232,6 +235,9 @@ curl http://localhost:3001/api/health
 
 **Q: How do I change fill-level thresholds?**  
 A: Update the `ALERT_THRESHOLD` in `client/src/App.jsx` and the `max_height_cm` field in the database.
+
+**Q: What is the default sensor calibration?**  
+A: The system is tuned for a standard **25cm** bin height. It uses inverted logic (Small distance = Empty) to accommodate bottom-mounted or recessed ultrasonic configurations.
 
 **Q: Is there an automatic data cleanup?**  
 A: Yes. The server runs a background task every 24 hours that purges measurements older than 1 year to keep the SQLite environment optimized.
