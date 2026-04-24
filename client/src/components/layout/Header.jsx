@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import NotificationPanel from "./NotificationPanel";
 import { ALERT_THRESHOLD } from "../../utils/constants";
 
@@ -9,6 +9,22 @@ import { ALERT_THRESHOLD } from "../../utils/constants";
 export default function Header({ bins, wsStatus, user, onLogout }) {
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotif(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfile(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const alertCount = bins.filter(
     (b) =>
@@ -35,7 +51,7 @@ export default function Header({ bins, wsStatus, user, onLogout }) {
         />
 
         {/* Notifications */}
-        <div className="icon-btn-wrap">
+        <div className="icon-btn-wrap" ref={notifRef}>
           <button
             className="icon-btn"
             onClick={() => {
@@ -55,7 +71,7 @@ export default function Header({ bins, wsStatus, user, onLogout }) {
         </div>
 
         {/* Profile */}
-        <div className="icon-btn-wrap">
+        <div className="icon-btn-wrap" ref={profileRef}>
           <button
             className="icon-btn profile-btn"
             onClick={() => {

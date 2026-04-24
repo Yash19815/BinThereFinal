@@ -2,6 +2,7 @@
 
 | Version | Date       | Type          | Summary                                                                                           |
 | ------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| v2.8.0  | 2026-04-24 | 🎨 UI         | Enhanced dropdown opacity and implemented click-outside-to-close behavior for Header navigation    |
 | v2.7.0  | 2026-04-23 | 🔧 Fix         | Resolved Export API 404 and expanded UI visuals                                                   |
 | v2.6.0  | 2026-04-23 | 🔧 Fix         | Logic Inversion: Small distance now maps to Empty; Restored Traffic Light (G/Y/R) visuals          |
 | v2.5.2  | 2026-04-23 | 🎨 UI         | Color Refinement: Restored waste-type identity (Blue/Green) with status-aware alert transitions    |
@@ -32,6 +33,19 @@ All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+
+---
+
+## [v2.8.0] — 2026-04-24
+### Summary
+Improved the usability and visual clarity of the header navigation by increasing the opacity of dropdown panels and implementing a smarter "click-outside" closure logic for the notification and profile menus.
+
+### Changed
+- **Dropdown Opacity**: Switched `.notif-dropdown` and `.profile-dropdown` to a **fully opaque** solid background (`var(--surface-solid)`) and removed all glassmorphism/backdrop-filter effects to maximize readability.
+- **Auto-Close Logic**: Implemented a global document click listener in `Header.jsx` that automatically closes open dropdowns when a user clicks anywhere outside the menu boundaries.
+
+### Added
+- **Ref-Based Interaction**: Integrated `useRef` and `useEffect` hooks in the `Header` component to track dropdown boundaries and manage stateful menu transitions more reliably.
 
 ---
 
