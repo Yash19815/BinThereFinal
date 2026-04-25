@@ -240,7 +240,7 @@ A: Update the `ALERT_THRESHOLD` in `client/src/App.jsx` and the `max_height_cm` 
 A: The system is tuned for a standard **25cm** bin height. It uses inverted logic (Small distance = Empty) to accommodate bottom-mounted or recessed ultrasonic configurations.
 
 **Q: Is there an automatic data cleanup?**  
-A: Yes. The server runs a background task every 24 hours that purges measurements older than 1 year to keep the SQLite environment optimized.
+A: Yes.The server runs a background task every 24 hours that purges measurements older than 1 year to keep the SQLite environment optimized.
 
 **Q: How do I fix "WebSocket Disconnected" errors?**  
 A:
