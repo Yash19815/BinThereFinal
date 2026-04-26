@@ -2,6 +2,7 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| v2.11.0 | 2026-04-26 | 🚀 Update      | Documentation overhaul and restoration of the missing Heatmap backend endpoint     |
 | v2.10.0 | 2026-04-25 | 🔧 Fix         | Critical fill-level formula fix, input validation, broadcast optimization, and test script rewrite |
 | v2.9.0  | 2026-04-24 | ⚡ Performance | Backend bottleneck elimination: async auth, DB indexing, fleet caching, and batched purge         |
 | v2.8.0  | 2026-04-24 | 🎨 UI          | Enhanced dropdown opacity and implemented click-outside-to-close behavior for Header navigation   |
@@ -34,6 +35,33 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.11.0] — 2026-04-26
+
+### Summary
+
+Extensive documentation and metadata overhaul based on a full-stack knowledge graph audit. Synchronized the `README.md` with the physical codebase, documented the previously "hidden" Edge ML pipeline, and corrected several stale architectural references.
+
+### Added
+
+- **Edge AI Documentation** — Added a dedicated "Edge AI & Image Classification" section to the README, detailing the Raspberry Pi Zero 2W "Master Brain" pipeline (OpenCV, UART relay, and ML classification).
+- **Missing API Documentation** — Documented `/api/analytics/utilization` and `/api/export/metadata` endpoints that were missing from the technical reference.
+- **Project Structure Depth** — Expanded the directory tree to include `ota_check/`, detailed `python_scripts/` components, and categorized `client/` UI subdirectories.
+- **Environment Variable Transparency** — Added 5 missing variables to the configuration table: `VITE_WS_URL`, `JWT_EXPIRES_IN`, `DEFAULT_ADMIN_PASSWORD/USERNAME`, and `HOST`.
+
+### Changed
+
+- **Path Correction** — Fixed several stale references to `Final_code/` (renamed to `ESP32_Code/`) across the documentation.
+- **API Reference Audit** — Removed ghost entries for `/api/sensor-data` and `/api/bins/:id/heatmap` which existed in documentation but lacked backend route handlers.
+- **FAQ Accuracy** — Corrected the threshold calibration answer to distinguish between backend fill-cycle detection and frontend alert badges.
+- **Repository Metadata** — Updated `package.json` with the current GitHub repository URL (`BinThere-Dashboard`).
+
+### Fixed
+
+- **Heatmap Data Feed** — Restored the missing `/api/bins/:id/heatmap` backend endpoint. Resolved the issue where the heatmap component would stay in a "Loading" state indefinitely due to a missing route handler.
+- **Broken Links** — Integrated missing links to `CHANGELOG.md`, `BinThere_Code_Explained.md`, `BinThere_Dashboard_Code_Explained.md`, and the `ota_check/` safety protocols.
 
 ---
 

@@ -1,6 +1,7 @@
 # BinThere — Smart Waste Intelligence Dashboard
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache2.0-yellow.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Version](https://img.shields.io/badge/Version-2.11.0-orange)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-v18+-green)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18-blue)](https://react.dev/)
 [![ESP32](https://img.shields.io/badge/Hardware-ESP32-red)](https://www.espressif.com/)
@@ -36,8 +37,15 @@ BinThere is a high-performance, real-time monitoring ecosystem designed for smar
 
 - **One-Click Configuration**: Automated setup script for dependency management and environment synchronization.
 - **Dynamic Host Discovery**: Zero-config networking; the dashboard automatically detects your server's IP for cross-device testing.
-- **Web-Based Debugger**: Integrated serial monitor and OTA (Over-The-Air) update capability for hardware management.
+- **Web-Based Debugger**: Integrated WebSocket serial monitor and OTA (Over-The-Air) update capability for hardware management.
 - **Lean Data Management**: Automated 24-hour background task that purges historical data older than a year to maintain DB performance.
+
+### 🧠 Edge AI & Image Classification
+
+- **Master Brain Integration**: Raspberry Pi Zero 2W pipeline for motion-triggered image capture via OpenCV.
+- **Intelligent Routing**: Automated waste classification (Cloud/Local ML) and servo-driven bin routing.
+- **Telemetry Relay**: Real-time UART bridge between Pi Zero and ESP32 for coordinated sensing and actuation.
+- **ML Sandbox**: Local FastAPI server mock for testing image classification logic without live hardware.
 
 ### 📤 Data Portability
 
@@ -55,6 +63,7 @@ Bintethere-Final/
 ├── package.json              ← Root manager (concurrent dev startup)
 │
 ├── client/                   ← React/Vite Frontend
+│   ├── src/components/       ← 6 UI categories (Modals, Dashboard, etc.)
 │   ├── src/App.jsx           ← Main Orchestrator (WebSocket + Charts)
 │   └── src/AuthContext.jsx   ← Secure Auth & API Discovery
 │
@@ -62,15 +71,20 @@ Bintethere-Final/
 │   ├── server.js             ← API, WebSocket, & Database Logic
 │   └── exportRoutes.js       ← IST-localized Excel Generation
 │
-├── Final_code/               ← Main ESP32 Pipeline (C++/Arduino)
+├── ESP32_Code/               ← Main ESP32 Pipeline (C++/Arduino)
 │   ├── binthere_final_pipeline.ino
-│   └── config.h.example      ← Hardware config template
+│   └── config.h.example      ← Hardware config template(keep the server ip same as your ip)
 │
-├── serial_monitor/           ← WebUSB-based Hardware Debugger
-│   └── monitor.html          ← Standalone Browser Debugger
+├── ota_check/                ← OTA Update Validation Firmware
+│   └── ota_confirm.ino       ← confirmation sketch for confirming binary change over the air
 │
-├── python_scripts/           ← Master automation tools
-│   └── binthere_master.py
+├── serial_monitor/           ← WebSocket-based Serial monitor template
+│   └── monitor.html          ← HTML code for web based serial monitor
+│
+├── python_scripts/           ← Edge ML & Automation ("Master Brain")
+│   ├── binthere_master.py    ← Motion detection & Camera burst
+│   ├── local_server.py       ← FastAPI ML mock server
+│   └── send_images.py        ← Standalone image upload utility to test the model
 │
 ├── test-sensor.ps1           ← Hardware simulation utility
 └── ... (additional docs)
@@ -120,13 +134,17 @@ The system is designed to work with minimal manual editing. Most variables are i
 
 ### Key Environment Settings
 
-| Variable         | Default Scope | Description                                    |
-| :--------------- | :------------ | :--------------------------------------------- |
-| `PORT`           | Backend       | Server listener port (Standard: 3001)          |
-| `JWT_SECRET`     | Backend       | Root secret for secure session tokens          |
-| `DB_PATH`        | Backend       | Path to the `bins.db` SQLite storage           |
-| `DEVICE_API_KEY` | Backend       | Static bypass key for hardware authentications |
-| `VITE_API_URL`   | Frontend      | Bridge URL (auto-generated for local IP)       |
+| Variable             | Default Scope | Description                                    |
+| :------------------- | :------------ | :--------------------------------------------- |
+| `PORT`               | Backend       | Server listener port (Standard: 3001)          |
+| `JWT_SECRET`         | Backend       | Root secret for secure session tokens          |
+| `JWT_EXPIRES_IN`     | Backend       | Token lifetime (Default: 7d)                   |
+| `DB_PATH`            | Backend       | Path to the `bins.db` SQLite storage           |
+| `DEVICE_API_KEY`     | Backend       | Static bypass key for hardware authentications |
+| `DEFAULT_ADMIN_USER` | Backend       | Initial admin username (Default: admin)        |
+| `DEFAULT_ADMIN_PASS` | Backend       | Initial admin password (Default: admin123)     |
+| `VITE_API_URL`       | Frontend      | Bridge URL (auto-generated for local IP)       |
+| `VITE_WS_URL`        | Frontend      | WebSocket bridge (auto-generated for local IP) |
 
 > [!WARNING]
 > **Production Security**: The development setup generates a unique `JWT_SECRET`. For production deployments, ensure all secrets are managed via a secure environment manager.
@@ -139,30 +157,30 @@ The system is designed to work with minimal manual editing. Most variables are i
 
 No authentication required.
 
-| Method | Path                 | Description                             |
-| :----- | :------------------- | :-------------------------------------- |
-| `POST` | `/api/auth/login`    | Authenticate and retrieve JWT           |
-| `POST` | `/api/auth/register` | Create a new account                    |
-| `POST` | `/api/sensor-data`   | **Legacy** dual-sensor ingest (Dry/Wet) |
+| Method | Path                 | Description                   |
+| :----- | :------------------- | :---------------------------- |
+| `POST` | `/api/auth/login`    | Authenticate and retrieve JWT |
+| `POST` | `/api/auth/register` | Create a new account          |
 
 ### 🔒 Protected Endpoints
 
 Requires `Authorization: Bearer <token>` or `X-Device-Key: <key>`.
 
-| Method   | Path                           | Description                              |
-| :------- | :----------------------------- | :--------------------------------------- |
-| `GET`    | `/api/auth/me`                 | Resolve current user profile             |
-| `GET`    | `/api/health`                  | System liveness & connection probe       |
-| `GET`    | `/api/bins`                    | Retrieve all bins & current states       |
-| `GET`    | `/api/bins/:id`                | Single bin details + measurement history |
-| `GET`    | `/api/bins/:id/analytics`      | Daily fill-cycle trend data              |
-| `GET`    | `/api/bins/:id/heatmap`        | 24x7 peak hours matrix                   |
-| `POST`   | `/api/bins`                    | Register a new dustbin (Admin)           |
-| `PATCH`  | `/api/bins/:id`                | Update bin metadata (e.g., location)     |
-| `DELETE` | `/api/bins/:id`                | Remove a bin and cascade delete data     |
-| `POST`   | `/api/bins/:id/measurement`    | Record per-compartment reading           |
-| `GET`    | `/api/export/excel`            | Multi-sheet data export (IST)            |
-| `GET`    | `/api/analytics/fleet-history` | 7-day fleet-wide utilization trends      |
+| Method   | Path                           | Description                               |
+| :------- | :----------------------------- | :---------------------------------------- |
+| `GET`    | `/api/auth/me`                 | Resolve current user profile              |
+| `GET`    | `/api/health`                  | System liveness & connection probe        |
+| `GET`    | `/api/bins`                    | Retrieve all bins & current states        |
+| `GET`    | `/api/bins/:id`                | Single bin details + measurement history  |
+| `GET`    | `/api/bins/:id/analytics`      | Daily fill-cycle trend data               |
+| `POST`   | `/api/bins`                    | Register a new dustbin (Admin)            |
+| `PATCH`  | `/api/bins/:id`                | Update bin metadata (e.g., location)      |
+| `DELETE` | `/api/bins/:id`                | Remove a bin and cascade delete data      |
+| `POST`   | `/api/bins/:id/measurement`    | Record per-compartment reading            |
+| `GET`    | `/api/analytics/utilization`   | Real-time 24h fleet utilization score     |
+| `GET`    | `/api/analytics/fleet-history` | 7-day fleet-wide utilization trends       |
+| `GET`    | `/api/export/metadata`         | Export availability & date range metadata |
+| `GET`    | `/api/export/excel`            | Multi-sheet data export (IST)             |
 
 ---
 
@@ -187,10 +205,11 @@ The system utilizes an ESP32 microcontroller to interface with diverse sensors a
 
 ### Firmware Pipeline
 
-1. **Source**: Locate `Final_code/binthere_final_pipeline.ino`.
+1. **Main Source**: Locate `ESP32_Code/binthere_final_pipeline.ino`.
 2. **Setup**: Create `config.h` from the provided template.
-3. **Libraries**: Required: `ESP32Servo`, `Adafruit_VL53L0X`, `ESPAsyncWebServer`, `ElegantOTA`.
-4. **OTA**: Update over-the-air via `http://<device-ip>/update` after first flash.
+3. **Validation**: Use `ota_check/ota_confirm.ino` to verify connection stability before high-risk firmware migrations.
+4. **Libraries**: Required: `ESP32Servo`, `Adafruit_VL53L0X`, `ESPAsyncWebServer`, `ElegantOTA`.
+5. **OTA Updates**: Flash via `http://<device-ip>/update` using the ElegantOTA industrial portal.
 
 ---
 
@@ -217,24 +236,29 @@ curl http://localhost:3001/api/health
 | :------------ | :-------------------------------------------------------- |
 | **UI/UX**     | React 18 / Vite / Vanilla CSS (Modern Tokens)             |
 | **Server**    | Node.js (Express) / WebSocket (ws)                        |
+| **Edge ML**   | Python 3.x / OpenCV / FastAPI (Master Brain Interface)    |
 | **Auth**      | JWT / Bcrypt (Secure Hashing)                             |
 | **Database**  | Better-SQLite3 (Synchronous performance) / ExcelJS engine |
 | **Analytics** | Chart.js 4 / 24x7 Custom Heatmap Grid                     |
-| **Hardware**  | C++ (Arduino/ESP32)                                       |
+| **Hardware**  | C++ (Arduino/ESP32) / ElegantOTA / NVS Storage            |
 
 ---
 
 ## 📚 Related Documentation
 
+- 📄 **[System Architecture](./BinThere_Code_Explained.md)**: Deep dive into the hybrid IoT/ML pipeline.
+- 📄 **[Dashboard Deep-Dive](./BinThere_Dashboard_Code_Explained.md)**: Logic breakdown of the React glassmorphic frontend.
 - 📄 **[Export System](./EXPORT_FEATURE_GUIDE.md)**: Detailed guide for IST-localized Excel reporting.
+- 📄 **[OTA Subsystem](./ota_check/README.md)**: Hardware safety and update validation protocols.
 - 📄 **[Contributing Guidelines](./CONTRIBUTING.md)**: Standards for adding features and maintaining code quality.
+- 📜 **[Changelog](./CHANGELOG.md)**: Historical record of system upgrades and fixes.
 
 ---
 
 ## 📖 FAQ & Maintenance
 
 **Q: How do I change fill-level thresholds?**  
-A: Update the `ALERT_THRESHOLD` in `client/src/App.jsx` and the `max_height_cm` field in the database.
+A: Update `FULL_THRESHOLD` (Default: 60) and `EMPTY_THRESHOLD` (Default: 20) in `server/server.js`. The dashboard UI alert badges are calibrated in `client/src/App.jsx`.
 
 **Q: What is the default sensor calibration?**  
 A: The system is tuned for a standard **25cm** bin height. It uses inverted logic (Small distance = Empty) to accommodate bottom-mounted or recessed ultrasonic configurations.

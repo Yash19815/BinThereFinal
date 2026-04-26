@@ -553,6 +553,62 @@ app.post("/api/bins/:id/measurement", requireAuth, (req, res) => {
   res.json({ status: "success", data: { bin_id: binId, compartment, fill_level_percent: fillLevel, timestamp } });
 });
 
+/**
+ * GET /api/bins/:id/heatmap
+ * Returns 24x7 activity density (avg fill cycles per week) for a specific bin.
+ */
+app.get("/api/bins/:id/heatmap", requireAuth, (req, res) => {
+  const binId = parseInt(req.params.id, 10);
+  const compartment = req.query.compartment; // optional: 'dry' | 'wet'
+
+  const bin = db.prepare("SELECT * FROM bins WHERE id = ?").get(binId);
+  if (!bin) return res.status(404).json({ status: "error", message: "Bin not found" });
+
+  let query = "SELECT filled_at FROM fill_cycles WHERE bin_id = ?";
+  const params = [binId];
+  if (compartment === "dry" || compartment === "wet") {
+    query += " AND compartment = ?";
+    params.push(compartment);
+  }
+  query += " ORDER BY filled_at ASC";
+
+  const rows = db.prepare(query).all(...params);
+
+  // Calculate total weeks covered
+  let weeks = 1;
+  if (rows.length > 0) {
+    const start = new Date(rows[0].filled_at);
+    const end = new Date();
+    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    weeks = Math.max(1, Math.ceil(diffDays / 7));
+  }
+
+  // Initialize 7x24 matrix
+  const matrix = Array.from({ length: 7 }, () => Array(24).fill(0));
+  
+  rows.forEach(r => {
+    const d = new Date(r.filled_at);
+    // (d.getDay() + 6) % 7 maps Sunday(0)->6, Monday(1)->0 ... Saturday(6)->5
+    // But PeakHoursHeatmap.jsx defines DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    // So Monday is 0. getDay() is Sun(0), Mon(1)...
+    const dayIdx = (d.getDay() + 6) % 7; 
+    const hrIdx = d.getHours();
+    matrix[dayIdx][hrIdx]++;
+  });
+
+  // Calculate averages and find max
+  let max = 0;
+  const data = matrix.map(row => 
+    row.map(val => {
+      const avg = val / weeks;
+      if (avg > max) max = avg;
+      return avg;
+    })
+  );
+
+  res.json({ status: "success", data, max, weeks });
+});
+
 // Excel export routes
 app.use("/api", exportRoutes);
 

@@ -1,6 +1,6 @@
 {
   "name": "binthere-dustbin-monitor",
-  "version": "2.4.5",
+  "version": "2.11.0",
   "description": "Smart dustbin monitoring web app using ESP32 ultrasonic sensors — real-time fill level dashboard.",
   "private": true,
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Yash19815/ultrasonic-sensor-test-via-wifi.git"
+    "url": "git+https://github.com/Yash19815/BinThere-Dashboard.git"
   },
   "license": "Apache-2.0"
 }
