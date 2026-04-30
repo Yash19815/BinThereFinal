@@ -71,7 +71,10 @@ export function useBins(token) {
     });
     const json = await res.json();
     if (json.status === "success") {
-      setBins((prev) => [...prev, json.bin]);
+      setBins((prev) => {
+        if (prev.some((b) => b.id === json.bin.id)) return prev;
+        return [...prev, json.bin];
+      });
       return true;
     }
     throw new Error(json.message);

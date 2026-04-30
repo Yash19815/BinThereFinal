@@ -2,6 +2,7 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| v2.11.1 | 2026-04-30 | 🔧 Fix         | Fixed duplicate dustbin creation, cascading deletion bug, and missing individual bin history      |
 | v2.11.0 | 2026-04-26 | 🚀 Update      | Documentation overhaul and restoration of the missing Heatmap backend endpoint     |
 | v2.10.0 | 2026-04-25 | 🔧 Fix         | Critical fill-level formula fix, input validation, broadcast optimization, and test script rewrite |
 | v2.9.0  | 2026-04-24 | ⚡ Performance | Backend bottleneck elimination: async auth, DB indexing, fleet caching, and batched purge         |
@@ -35,6 +36,19 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.11.1] — 2026-04-30
+
+### Summary
+
+Resolved race conditions causing UI duplication and restored the missing backend history endpoint for individual bin readings.
+
+### Fixed
+
+- **Duplicate Creation & Cascading Deletion** — Fixed a race condition in `useBins.js` where the HTTP `POST` response and the real-time WebSocket broadcast would both append a new bin to the frontend state, creating duplicate UI cards with identical IDs. This also implicitly fixed the bug where deleting one duplicated bin would wipe out both, since `filter` removed all matches by the shared ID.
+- **Missing Sensor Readings** — Added the missing `GET /api/bins/:id` route handler to `server.js`, restoring the ability to view the latest 50 measurements and historical charts when clicking on an individual dustbin card.
 
 ---
 

@@ -430,6 +430,22 @@ app.post("/api/bins", requireAuth, (req, res) => {
   res.status(201).json({ status: "success", bin: newBin });
 });
 
+app.get("/api/bins/:id", requireAuth, (req, res) => {
+  const binId = parseInt(req.params.id, 10);
+  const bin = db.prepare("SELECT * FROM bins WHERE id = ?").get(binId);
+  if (!bin) return res.status(404).json({ status: "error", message: "Bin not found" });
+
+  const history = db.prepare(`
+    SELECT compartment, raw_distance_cm, fill_level_percent, timestamp
+    FROM measurements
+    WHERE bin_id = ?
+    ORDER BY timestamp DESC
+    LIMIT 50
+  `).all(binId);
+
+  res.json({ status: "success", bin, history });
+});
+
 app.delete("/api/bins/:id", requireAuth, (req, res) => {
   const binId = parseInt(req.params.id, 10);
   if (!db.prepare("SELECT 1 FROM bins WHERE id = ?").get(binId)) return res.status(404).json({ status: "error", message: "Bin not found" });
