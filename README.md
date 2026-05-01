@@ -246,8 +246,6 @@ curl http://localhost:3001/api/health
 
 ## 📚 Related Documentation
 
-- 📄 **[System Architecture](./BinThere_Code_Explained.md)**: Deep dive into the hybrid IoT/ML pipeline.
-- 📄 **[Dashboard Deep-Dive](./BinThere_Dashboard_Code_Explained.md)**: Logic breakdown of the React glassmorphic frontend.
 - 📄 **[Export System](./EXPORT_FEATURE_GUIDE.md)**: Detailed guide for IST-localized Excel reporting.
 - 📄 **[OTA Subsystem](./ota_check/README.md)**: Hardware safety and update validation protocols.
 - 📄 **[Contributing Guidelines](./CONTRIBUTING.md)**: Standards for adding features and maintaining code quality.
