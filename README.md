@@ -273,6 +273,12 @@ A:
 
 ---
 
+**Designed and Developed by:**
+* [Kamlesh Ramnani](https://github.com/kamleshk3r)
+* [Yash Gedia](https://github.com/Yash19815)
+* [Vansh Soni](https://github.com/eark749)
+* [Aditya Harsh](https://github.com/adityaharshsingh7)
+
 ## License
 
 Distributed under the ** Apache License Version 2.0**. See `LICENSE` for more information.
