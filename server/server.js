@@ -330,6 +330,7 @@ const LOG_ROUTES = [
   { pattern: /^\/api\/bins\/\d+$/, method: "PATCH", message: "Optimization: Calibrated configuration settings for a specific asset" },
   { pattern: /^\/api\/analytics\/utilization$/, message: "Efficiency Audit: Evaluated current resource load across the network" },
   { pattern: /^\/api\/analytics\/fleet-history$/, message: "Performance Review: Compiled historical trends for the 7-day operational cycle" },
+  { pattern: /^\/api\/analytics\/fleet-fill-cycles(\?.*)?$/, message: "Fleet Cycles: Aggregated total fill cycles across all bins" },
   { pattern: /^\/api\/bins\/\d+\/analytics$/, message: "Unit Analysis: Benchmarked efficiency metrics for a specific asset" },
   { pattern: /^\/api\/bins\/\d+\/heatmap$/, message: "Strategic Mapping: Visualized peak activity patterns and usage density" },
   { pattern: /^\/api\/bins\/\d+$/, method: "GET", message: "Data Inspection: Reviewed comprehensive historical logs for a specific unit" },
@@ -508,6 +509,35 @@ app.get("/api/analytics/fleet-history", requireAuth, (req, res) => {
     status: "success",
     labels: allDays.map(d => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric" })),
     points: allDays.map(d => dayMap[d] ?? 0),
+  });
+});
+
+app.get("/api/analytics/fleet-fill-cycles", requireAuth, (req, res) => {
+  const days = Math.min(parseInt(req.query.range || "7", 10), 90);
+  const allDays = Array.from({ length: days }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (days - 1 - i)); return d.toISOString().slice(0, 10);
+  });
+  const rows = db.prepare(`
+    SELECT date(filled_at) AS day, compartment, COUNT(*) AS cnt
+    FROM fill_cycles
+    WHERE filled_at >= datetime('now', ? || ' days')
+    GROUP BY day, compartment
+  `).all(`-${days}`);
+  const dryMap = {}, wetMap = {};
+  rows.forEach(r => {
+    if (r.compartment === "dry") dryMap[r.day] = r.cnt;
+    if (r.compartment === "wet") wetMap[r.day] = r.cnt;
+  });
+  res.json({
+    status: "success",
+    labels: allDays.map(d => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric" })),
+    dry: allDays.map(d => dryMap[d] ?? 0),
+    wet: allDays.map(d => wetMap[d] ?? 0),
+    latest: {
+      date: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+      dry: dryMap[new Date().toISOString().slice(0, 10)] ?? 0,
+      wet: wetMap[new Date().toISOString().slice(0, 10)] ?? 0,
+    },
   });
 });
 

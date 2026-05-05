@@ -222,8 +222,9 @@ export default function App() {
               <select
                 className="analytics-bin-select"
                 value={analyticsBinId || ""}
-                onChange={(e) => setAnalyticsBinId(Number(e.target.value))}
+                onChange={(e) => setAnalyticsBinId(e.target.value === "fleet" ? "fleet" : Number(e.target.value))}
               >
+                <option value="fleet">All Bins — Overall</option>
                 {bins.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name} — {b.location}
@@ -239,7 +240,9 @@ export default function App() {
                   refreshKey={analyticsKey}
                   token={token}
                 />
-                <PeakHoursHeatmap binId={analyticsBinId} token={token} />
+                {analyticsBinId !== "fleet" && (
+                  <PeakHoursHeatmap binId={analyticsBinId} token={token} />
+                )}
               </>
             )}
 

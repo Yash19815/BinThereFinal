@@ -2,6 +2,7 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| v2.12.0 | 2026-05-05 | 📊 Analytics   | Added fleet-wide fill cycle aggregation in AnalyticsSection  |
 | v2.11.1 | 2026-04-30 | 🔧 Fix         | Fixed duplicate dustbin creation, cascading deletion bug, and missing individual bin history      |
 | v2.11.0 | 2026-04-26 | 🚀 Update      | Documentation overhaul and restoration of the missing Heatmap backend endpoint     |
 | v2.10.0 | 2026-04-25 | 🔧 Fix         | Critical fill-level formula fix, input validation, broadcast optimization, and test script rewrite |
@@ -36,6 +37,19 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.12.0] — 2026-05-05
+
+### Summary
+
+Expanded analytics capabilities by adding fleet-wide aggregation features. Introduced a combined fleet fill cycle view, allowing users to analyze entire network performance from the main dashboard.
+
+### Added
+
+- **Fleet Fill Cycle Aggregation** — Added a new backend endpoint `GET /api/analytics/fleet-fill-cycles` to aggregate "Dry" and "Wet" waste events across all bins.
+- **"All Bins — Overall" Target** — Added a new option to the `Unit Analysis Target` dropdown allowing users to toggle the bottom fill cycle chart between individual infrastructure units and the combined fleet overview dynamically.
 
 ---
 
