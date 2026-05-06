@@ -205,12 +205,15 @@ The system utilizes an ESP32 microcontroller to interface with diverse sensors a
 
 ### Firmware Pipeline
 
-1. **Main Source**: Locate `ESP32_Code/binthere_final_pipeline.ino`.
-2. **Setup**: Create `config.h` from the provided template.
-3. **Validation**: Use `ota_check/ota_confirm.ino` to verify connection stability before high-risk firmware migrations.
-4. **Libraries**: Required: `ESP32Servo`, `Adafruit_VL53L0X`, `ESPAsyncWebServer`, `ElegantOTA`.
-5. **OTA Updates**: Flash via `http://<device-ip>/update` using the ElegantOTA industrial portal.
-
+1. **Board Manager**: Add the following URLs to your Arduino IDE's *Additional Boards Manager URLs* (`File` -> `Preferences`) to install ESP32 support:
+   `https://espressif.github.io/arduino-esp32/package_esp32_index.json,https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
+2. **Main Source**: Locate `ESP32_Code/binthere_final_pipeline.ino`.
+3. **Setup**: Create `config.h` from the provided template.
+4. **Validation**: Use `ota_check/ota_confirm.ino` to verify connection stability before high-risk firmware migrations.
+5. **Libraries**: Extract the provided `libraries.rar` directly into your `Documents/Arduino/libraries` folder. This ensures you have the exact required versions (`ESP32Servo`, `Adafruit_VL53L0X`, `ESPAsyncWebServer`, `ElegantOTA`, etc.) and avoids confusion with identically named libraries.
+6. **OTA Updates**: Flash via `http://<device-ip>/update` using the ElegantOTA industrial portal.
+> [!IMPORTANT]
+> Your `binthere_final_pipeline.ino`, `config.h`, `webpage.h` must be in a folder named same are your .ino file and the folder should be located in `Documents/Arduino`.
 ---
 
 ## 🧪 Simulation & Testing
