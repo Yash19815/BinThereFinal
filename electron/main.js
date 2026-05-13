@@ -12,17 +12,29 @@ const isDev = !app.isPackaged;
 let win, serverProcess;
 
 /**
- * Spawn the Express/WS server as a child process using the bundled Node runtime.
- * Only called in production (packaged) builds — in dev the server is already
- * running via `npm run dev --prefix server` started by the dev script.
+ * Spawn the Express/WS server as a child process using the system Node binary.
+ * In a packaged build, app files live inside resources/app/ so we resolve
+ * the server directory relative to process.resourcesPath.
+ * Only called in production — in dev the server runs via the dev script.
  */
 function startServer() {
-  serverProcess = spawn(process.execPath, [path.join(ROOT, 'server', 'server.js')], {
-    cwd: path.join(ROOT, 'server'),
+  const serverDir = isDev
+    ? path.join(ROOT, 'server')
+    : path.join(process.resourcesPath, 'app', 'server');
+
+  const serverFile = path.join(serverDir, 'server.js');
+
+  // Must use the system `node` binary — process.execPath is the Electron binary
+  const nodeBin = process.platform === 'win32' ? 'node.exe' : 'node';
+
+  serverProcess = spawn(nodeBin, [serverFile], {
+    cwd: serverDir,
     env: { ...process.env, NODE_ENV: 'production' },
     stdio: 'inherit',
+    shell: false,
   });
-  serverProcess.on('error', err => console.error('[Server]', err));
+
+  serverProcess.on('error', err => console.error('[Server] spawn error:', err));
   serverProcess.on('exit', code => console.log(`[Server] exited with code ${code}`));
 }
 
@@ -77,7 +89,10 @@ app.whenReady().then(async () => {
   await createWindow();
 
   // Non-blocking: check GitHub Releases 10s after UI appears so startup is snappy.
-  setTimeout(() => silentUpdateCheck(), 10_000);
+  // Guard with isDev so we don't hit GitHub on every dev reload.
+  if (!isDev) {
+    setTimeout(() => silentUpdateCheck(), 10_000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

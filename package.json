@@ -45,14 +45,9 @@
       "electron/**/*",
       "client/dist/**/*",
       "server/**/*",
-      "!server/node_modules/**"
+      "server/node_modules/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "server/node_modules",
-        "to": "server/node_modules"
-      }
-    ]
+    "extraResources": []
   },
   "repository": {
     "type": "git",
