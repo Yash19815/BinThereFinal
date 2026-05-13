@@ -48,8 +48,24 @@ dotenv.config();
 // ESM-compatible __dirname equivalent
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Absolute path to the SQLite database file. Overridable via DB_PATH env var. */
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, "bins.db");
+/**
+ * Absolute path to the SQLite database file.
+ *
+ * When running inside the packaged Electron app, store the database in
+ * AppData/Roaming/BinThere so it is OUTSIDE the install directory and
+ * survives every silent NSIS update (deleteAppDataOnUninstall: false).
+ *
+ * When running as plain `node server.js` (dev mode), fall back to the
+ * classic path next to server.js — no behaviour change for developers.
+ */
+let DB_PATH;
+if (process.versions.electron) {
+  // Dynamically import electron to avoid a hard dependency in dev mode.
+  const { app: electronApp } = await import('electron');
+  DB_PATH = process.env.DB_PATH || path.join(electronApp.getPath('userData'), 'bins.db');
+} else {
+  DB_PATH = process.env.DB_PATH || path.join(__dirname, 'bins.db');
+}
 
 // ── Database Setup ──────────────────────────────────────────────────────────
 

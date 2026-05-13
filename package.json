@@ -1,21 +1,55 @@
 {
   "name": "binthere-dustbin-monitor",
-  "version": "2.12.0",
+  "version": "2.13.1",
   "description": "Smart dustbin monitoring web app using ESP32 ultrasonic sensors — real-time fill level dashboard.",
   "private": true,
+  "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
-    "configure": "node scripts/setup.js",
+    "configure": "node scripts/setup.cjs",
     "dev": "concurrently --names \"server,client\" --prefix-colors \"green,blue\" \"npm run dev --prefix server\" \"wait-on tcp:3001 && npm run dev --prefix client\"",
     "start": "concurrently --names \"server,client\" --prefix-colors \"green,blue\" \"npm start --prefix server\" \"wait-on tcp:3001 && npm run dev --prefix client\"",
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "kill-port": "npx kill-port 3001 5173 5174",
-    "format": "npx prettier --write ."
+    "format": "npx prettier --write .",
+    "electron:dev": "npm run build --prefix client && electron .",
+    "electron:build": "npm run build --prefix client && electron-builder --win --x64",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
     "wait-on": "^9.0.5"
+  },
+  "build": {
+    "appId": "com.binthere.dashboard",
+    "productName": "BinThere",
+    "win": {
+      "target": "nsis",
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "files": [
+      "electron/**/*",
+      "client/dist/**/*",
+      "server/**/*",
+      "!server/node_modules/nodemon/**"
+    ],
+    "extraResources": [
+      {
+        "from": "server/node_modules",
+        "to": "server/node_modules"
+      }
+    ]
   },
   "repository": {
     "type": "git",

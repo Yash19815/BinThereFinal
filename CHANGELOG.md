@@ -2,6 +2,8 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| v2.13.1 | 2026-05-13 | 🔧 Fix         | Rewrote `release.bat` as `release.ps1` to eliminate CMD `setlocal` recursion error               |
+| v2.13.0 | 2026-05-13 | 🚀 Update      | Electron .exe packaging with silent GitHub Releases auto-updater and AppData-safe DB persistence  |
 | v2.12.0 | 2026-05-05 | 📊 Analytics   | Added fleet-wide fill cycle aggregation in AnalyticsSection  |
 | v2.11.1 | 2026-04-30 | 🔧 Fix         | Fixed duplicate dustbin creation, cascading deletion bug, and missing individual bin history      |
 | v2.11.0 | 2026-04-26 | 🚀 Update      | Documentation overhaul and restoration of the missing Heatmap backend endpoint     |
@@ -37,6 +39,48 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.13.1] — 2026-05-13
+
+### Summary
+
+Fixed a critical **"Maximum setlocal recursion level reached"** crash in the release automation toolchain. The root cause was `release.bat` using `setlocal enabledelayedexpansion` inside a PowerShell-hosted `cmd.exe` — each `npm` call spawned a nested CMD context that stacked `setlocal` frames until the 32-level hard limit was hit, producing an infinite error loop.
+
+### Fixed
+
+- **`release.bat`** — Replaced all logic with a 3-line thin wrapper that delegates to `release.ps1` via `powershell.exe -File`, eliminating any CMD recursion
+- **`release.ps1`** — New PowerShell script containing all release logic: prerequisites check, version reading, changelog parsing, `npm run electron:build`, `.exe` discovery, and `gh release create` upload
+
+---
+
+## [v2.13.0] — 2026-05-13
+
+### Summary
+
+Packaged BinThere as a self-contained Windows `.exe` using **Electron + electron-builder**. The installer is built with NSIS (one-click, per-user) and the app ships a silent auto-updater that checks GitHub Releases in the background, downloads the new installer, and applies it on the next restart — zero user interaction required.
+
+### Added
+
+- **`electron/` directory** — Three new files constitute the Electron layer:
+  - `main.js` — spawns the Express server as a child process, creates the `BrowserWindow` loading `client/dist/index.html`, and wires up the silent update check 10 s after UI appears.
+  - `updater.js` — polls `GET /repos/Yash19815/BinThere-Dashboard/releases/latest`, compares semver, downloads the `.exe` asset to a temp folder, writes `pending-installer.json` to `userData`, and on next cold-start runs the installer with `/S` (NSIS silent flag) then quits.
+  - `preload.js` — exposes `window.electronAPI.getVersion()` to the renderer via `contextBridge`.
+- **`electron-builder` config** in `package.json` — NSIS `oneClick: true`, `perMachine: false`, `deleteAppDataOnUninstall: false` (critical — ensures `bins.db` in AppData survives update cycles).
+- **Three new npm scripts** — `electron:dev`, `electron:build`, `rebuild` (for `better-sqlite3` native re-linking).
+
+### Changed
+
+- **`package.json`** — Added `"main": "electron/main.js"`, bumped version to `2.13.0`, added `electron`, `electron-builder`, `electron-rebuild` as devDependencies.
+- **`server/server.js`** — `DB_PATH` is now Electron-aware: when `process.versions.electron` is set, `bins.db` lives in `app.getPath('userData')` (`AppData/Roaming/BinThere/`) rather than next to `server.js`. Dev-mode behaviour is completely unchanged.
+
+### Release Workflow (for maintainer)
+
+1. Bump `version` in root `package.json`.
+2. Run `npm run electron:build` → produces `dist/BinThere Setup <version>.exe`.
+3. Create a GitHub Release tagged `v<version>` and attach the `.exe` as a release asset.
+4. Installed apps detect the update within 10 s of next launch and download silently.
 
 ---
 
