@@ -2,6 +2,7 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| v2.13.2 | 2026-05-13 | 🔧 Fix         | Resolved Electron black screen and native OS menu bar display issues                              |
 | v2.13.1 | 2026-05-13 | 🔧 Fix         | Rewrote `release.bat` as `release.ps1` to eliminate CMD `setlocal` recursion error               |
 | v2.13.0 | 2026-05-13 | 🚀 Update      | Electron .exe packaging with silent GitHub Releases auto-updater and AppData-safe DB persistence  |
 | v2.12.0 | 2026-05-05 | 📊 Analytics   | Added fleet-wide fill cycle aggregation in AnalyticsSection  |
@@ -39,6 +40,20 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.13.2] — 2026-05-13
+
+### Summary
+
+Resolved visual polish issues on initial launch of the packaged Electron app. Removed the default OS application menu bar and resolved blank/black screen loads by relative-linking Vite asset builds.
+
+### Fixed
+
+- **`electron/main.js`** — Removed the native OS menu bar using `Menu.setApplicationMenu(null)` to maximize dashboard viewport real estate and match premium styling.
+- **`client/vite.config.js`** — Explicitly configured `base: "./"` and disabled default automatic browser opening (`server.open: false`) to support local filesystem-safe module resolving within the bundled Electron window.
+- **`client/electron/`** — Cleaned up redundant duplicate/nested `electron/` directory inside `client/` to maintain codebase structure sanity.
 
 ---
 

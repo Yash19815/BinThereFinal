@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -29,6 +29,9 @@ function startServer() {
  * renderer tries to make API calls on load.
  */
 async function createWindow() {
+  // Remove the native OS menu bar (File, Edit, etc.)
+  Menu.setApplicationMenu(null);
+
   win = new BrowserWindow({
     width: 1920,
     height: 1080,
