@@ -65,3 +65,5 @@ scratch/
 BinThere_Code_Explained.md
 BinThere_Dashboard_Code_Explained.md
 
+# -- Code Review Graph -------------------------------------------
+.code-review-graph/
