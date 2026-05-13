@@ -23,6 +23,10 @@ node_modules/
 dist/
 build/
 
+# ── Electron build output — .exe and all assets live here locally
+# Upload the contents to GitHub Releases manually; never commit them.
+dist-electron/
+
 # ── Vite cache ────────────────────────────────────────────────
 .vite/
 .agents

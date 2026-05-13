@@ -14,8 +14,8 @@
     "client": "npm run dev --prefix client",
     "kill-port": "npx kill-port 3001 5173 5174",
     "format": "npx prettier --write .",
-    "electron:dev": "npm run build --prefix client && electron .",
-    "electron:build": "npm run build --prefix client && electron-builder --win --x64",
+    "electron:dev": "concurrently --names \"server,client,electron\" --prefix-colors \"green,blue,magenta\" \"npm run dev --prefix server\" \"wait-on tcp:3001 && npm run dev --prefix client\" \"wait-on tcp:3001 tcp:5173 && electron .\"",
+    "electron:build": "npm run build --prefix client && npm run rebuild && electron-builder --win --x64",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "devDependencies": {
@@ -28,6 +28,9 @@
   "build": {
     "appId": "com.binthere.dashboard",
     "productName": "BinThere",
+    "directories": {
+      "output": "dist-electron"
+    },
     "win": {
       "target": "nsis",
       "icon": "electron/icon.ico"
@@ -42,7 +45,7 @@
       "electron/**/*",
       "client/dist/**/*",
       "server/**/*",
-      "!server/node_modules/nodemon/**"
+      "!server/node_modules/**"
     ],
     "extraResources": [
       {

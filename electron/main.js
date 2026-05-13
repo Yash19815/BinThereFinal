@@ -7,11 +7,14 @@ import { applyPendingInstall, silentUpdateCheck } from './updater.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 
+const isDev = !app.isPackaged;
+
 let win, serverProcess;
 
 /**
  * Spawn the Express/WS server as a child process using the bundled Node runtime.
- * stdio: 'inherit' pipes server stdout/stderr directly to Electron's console.
+ * Only called in production (packaged) builds — in dev the server is already
+ * running via `npm run dev --prefix server` started by the dev script.
  */
 function startServer() {
   serverProcess = spawn(process.execPath, [path.join(ROOT, 'server', 'server.js')], {
@@ -24,9 +27,10 @@ function startServer() {
 }
 
 /**
- * Create the main BrowserWindow and load the built Vite SPA.
- * A 1500ms delay gives Express time to bind port 3001 before the
- * renderer tries to make API calls on load.
+ * Create the main BrowserWindow.
+ * - Dev:  loads http://localhost:5173 (Vite HMR dev server)
+ * - Prod: loads client/dist/index.html (built SPA) with a 1500ms delay
+ *         so Express has time to bind port 3001 before the renderer fires API calls.
  */
 async function createWindow() {
   // Remove the native OS menu bar (File, Edit, etc.)
@@ -44,24 +48,32 @@ async function createWindow() {
     },
     title: 'BinThere Dashboard',
     show: false,
-    backgroundColor: '#0a0a0f', // match app dark background to avoid white flash
+    backgroundColor: '#0a0a0f',
   });
 
-  // Wait for Express to bind port before loading the file-based SPA
-  await new Promise(r => setTimeout(r, 1500));
+  if (isDev) {
+    // Dev: connect to the running Vite dev server for HMR
+    win.loadURL('http://localhost:5173');
+  } else {
+    // Prod: give Express 1500ms to bind port 3001 before loading the SPA
+    await new Promise(r => setTimeout(r, 1500));
+    win.loadFile(path.join(ROOT, 'client', 'dist', 'index.html'));
+  }
 
-  win.loadFile(path.join(ROOT, 'client', 'dist', 'index.html'));
   win.once('ready-to-show', () => win.show());
-
   win.on('closed', () => { win = null; });
 }
 
 app.whenReady().then(async () => {
-  // If a pending installer was downloaded in a previous session, run it and quit.
-  // This is a no-op when no update is pending.
+  // Apply any pending installer downloaded in a previous session (prod only)
   applyPendingInstall();
 
-  startServer();
+  // Only spawn the bundled server in a packaged production build.
+  // In dev mode the server is already running externally via the dev script.
+  if (!isDev) {
+    startServer();
+  }
+
   await createWindow();
 
   // Non-blocking: check GitHub Releases 10s after UI appears so startup is snappy.
