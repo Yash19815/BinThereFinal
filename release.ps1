@@ -63,7 +63,7 @@ if (-not $VERSION) {
     exit 1
 }
 
-$TAG     = "v$VERSION"
+$TAG      = "v$VERSION"
 $EXE_NAME = "BinThere-Setup-$VERSION.exe"
 
 Write-Host "  Version : $VERSION" -ForegroundColor White
@@ -107,10 +107,13 @@ if ($releaseExists -and $assetExists) {
                 Read-Host "Press Enter to exit"
                 exit 1
             }
-            # Patch package.json version in-place
-            $rawJson = Get-Content -Raw -Path "package.json"
-            $rawJson = $rawJson -replace "(\"version\"\s*:\s*\")([^\"]+)(\")", "`${1}$newVersion`${3}"
-            Set-Content -Path "package.json" -Value $rawJson -Encoding UTF8
+            # Patch package.json version in-place using node (avoids regex/escape issues)
+            node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version='$newVersion';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n','utf8');"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "  ERROR: Failed to update version in package.json." -ForegroundColor Red
+                Read-Host "Press Enter to exit"
+                exit 1
+            }
             $VERSION  = $newVersion
             $TAG      = "v$VERSION"
             $EXE_NAME = "BinThere-Setup-$VERSION.exe"
@@ -168,8 +171,8 @@ $releaseNotes = if ($endIndex -eq -1) {
     $changelogContent[$startIndex..($endIndex - 1)] -join "`n"
 }
 
-$releaseNotes   = $releaseNotes.Trim()
-$tempNotesFile  = "_release_notes.tmp"
+$releaseNotes  = $releaseNotes.Trim()
+$tempNotesFile = "_release_notes.tmp"
 Set-Content -Path $tempNotesFile -Value $releaseNotes -Encoding UTF8
 
 Write-Host "  [OK] Release notes extracted for $TAG" -ForegroundColor Green
@@ -247,12 +250,12 @@ if (-not $exeFiles) {
 
 $builtExe  = $exeFiles[0]
 $exePath   = $builtExe.FullName
-$finalPath = Join-Path "dist-electron" $EXE_NAME
+$finalPath = Join-Path (Resolve-Path "dist-electron") $EXE_NAME
 
 # Rename to canonical versioned name if needed
 if ($builtExe.Name -ne $EXE_NAME) {
     Rename-Item -Path $exePath -NewName $EXE_NAME
-    Write-Host "  [OK] Renamed '$($builtExe.Name)' → '$EXE_NAME'" -ForegroundColor Green
+    Write-Host "  [OK] Renamed '$($builtExe.Name)' -> '$EXE_NAME'" -ForegroundColor Green
     $exePath = $finalPath
 }
 
@@ -263,7 +266,6 @@ Write-Host ""
 
 # Create or upload to release
 if ($releaseExists) {
-    # Release tag already exists — just upload the asset (--clobber replaces same-named asset)
     Write-Host "  Uploading asset to existing release $TAG..." -ForegroundColor White
     gh release upload $TAG $exePath --repo $REPO --clobber
     if ($LASTEXITCODE -ne 0) {
@@ -278,7 +280,6 @@ if ($releaseExists) {
         }
     }
 } else {
-    # Create brand-new release and attach the installer in one command
     Write-Host "  Creating release $TAG and uploading installer..." -ForegroundColor White
     gh release create $TAG $exePath `
         --repo $REPO `
