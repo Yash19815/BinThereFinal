@@ -2,6 +2,7 @@
 
 | Version | Date       | Type           | Summary                                                                                            |
 | ------- | ---------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| v2.13.8 | 2026-05-14 | 📝 Docs        | Comprehensive detail expansion across all component READMEs and Pin Connection integration         |
 | v2.13.7 | 2026-05-14 | 🔧 Fix         | Migrated to extraResources and refactored backend spawn logic for improved stability               |
 | v2.13.6 | 2026-05-14 | 🔧 Fix         | Standardized backend server spawn logic with stdout piping and startup delay                       |
 | v2.13.5 | 2026-05-14 | 🔧 Fix         | Simplified production server path resolution in `electron/main.js`                                 |
@@ -45,6 +46,23 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+## [v2.13.9] — 2026-05-14
+
+### Summary
+
+Expanded and standardized documentation across all sub-components (`client`, `server`, `ESP32_Code`, `python_scripts`, `serial_monitor`, `ota_check`, `scripts`). Injected strict hardware guidelines, power budgets, and virtual environment instructions.
+
+### Added
+
+- **Hardware Pin Table**: Integrated the explicit pin connection map directly into `ESP32_Code/README.md` from `config.h`.
+- **Power Budget Warnings**: Added severe warnings against powering high-torque servos (MG995) directly from the ESP32 to prevent brownouts.
+- **Python Venv Guidelines**: Explicitly documented virtual environment scaffolding for Edge ML deployment.
+- **Security Callouts**: Enhanced OTA authentication documentation with GitHub-style warning blocks for credential rotation.
+
+### Changed
+
+- Enhanced all subdirectory READMEs to adhere strictly to the project's visual and architectural guidelines.
 
 ## [v2.13.7] — 2026-05-14
 

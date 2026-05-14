@@ -1,5 +1,11 @@
 # BinThere — Smart Waste Intelligence Dashboard
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache2.0-yellow.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Version](https://img.shields.io/badge/Version-2.13.8-orange)](package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-green)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18-blue)](https://react.dev/)
+[![ESP32](https://img.shields.io/badge/Hardware-ESP32-red)](https://www.espressif.com/)
+
 BinThere is a high-performance, real-time monitoring ecosystem designed for smart waste management. It utilizes ESP32-bound ultrasonic sensors to track fill levels in dual-compartment bins (**Dry Waste** and **Wet Waste**), providing actionable insights through a premium **"Frosted Control Room"** web dashboard and native desktop client.
 
 > [!IMPORTANT]
@@ -127,6 +133,14 @@ To compile the native Windows `.exe` and automatically publish it as a GitHub re
 
 ```powershell
 .\release.ps1
+
+```
+
+**Option C: Local Production Build**
+To compile the native Windows `.exe` locally without pushing a GitHub release, use:
+
+```powershell
+.\build.ps1
 
 ```
 
@@ -270,22 +284,26 @@ curl http://localhost:3001/api/health
 
 ## 📚 Related Documentation
 
-* 📄 **[Export System](https://www.google.com/search?q=./EXPORT_FEATURE_GUIDE.md)**: Detailed guide for IST-localized Excel reporting.
-* 📄 **[OTA Subsystem](https://www.google.com/search?q=./ota_check/README.md)**: Hardware safety and update validation protocols.
-* 📄 **[Contributing Guidelines](https://www.google.com/search?q=./CONTRIBUTING.md)**: Standards for adding features and maintaining code quality.
-* 📜 **[Changelog](https://www.google.com/search?q=./CHANGELOG.md)**: Historical record of system upgrades and fixes.
+* 📄 **[Export System](./EXPORT_FEATURE_GUIDE.md)**: Detailed guide for IST-localized Excel reporting.
+* 📄 **[OTA Subsystem](./ota_check/README.md)**: Hardware safety and update validation protocols.
+* 📄 **[Contributing Guidelines](./CONTRIBUTING.md)**: Standards for adding features and maintaining code quality.
+* 📜 **[Changelog](./CHANGELOG.md)**: Historical record of system upgrades and fixes.
 
 ---
 
 ## 📖 FAQ & Maintenance
 
-**Q: How do I change fill-level thresholds?** A: Update `FULL_THRESHOLD` (Default: 60) and `EMPTY_THRESHOLD` (Default: 20) in `server/server.js`. The dashboard UI alert badges are calibrated in `client/src/App.jsx`.
+**Q: How do I change fill-level thresholds?**  
+A: Update `FULL_THRESHOLD` (Default: 60) and `EMPTY_THRESHOLD` (Default: 20) in `server/server.js`. The dashboard UI alert badges are calibrated in `client/src/App.jsx`.
 
-**Q: What is the default sensor calibration?** A: The system is tuned for a standard **25cm** bin height. It uses inverted logic (Small distance = Empty) to accommodate bottom-mounted or recessed ultrasonic configurations.
+**Q: What is the default sensor calibration?**  
+A: The system is tuned for a standard **25cm** bin height. It uses inverted logic (Small distance = Empty) to accommodate bottom-mounted or recessed ultrasonic configurations.
 
-**Q: Is there an automatic data cleanup?** A: Yes. The server runs a background task every 24 hours that purges measurements older than 1 year to keep the SQLite environment optimized.
+**Q: Is there an automatic data cleanup?**  
+A: Yes. The server runs a background task every 24 hours that purges measurements older than 1 year to keep the SQLite environment optimized.
 
-**Q: How do I fix "WebSocket Disconnected" errors?** A:
+**Q: How do I fix "WebSocket Disconnected" errors?**  
+A:
 
 * Ensure the backend is running via `npm run dev` or the Electron host.
 * Verify your browser isn't blocking local network connections.
