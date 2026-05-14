@@ -38,8 +38,10 @@ function waitForPort(port, timeout = 15000) {
 
 // ─── Spawn the Node backend ───────────────────────────────────────────────────
 function startBackend() {
+  // package.json uses asarUnpack: ["server/**"] so the server is unpacked at:
+  // resources/app.asar.unpacked/server/server.js  (NOT resources/server/server.js)
   const serverPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'server', 'server.js')
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'server.js')
     : path.join(__dirname, '..', 'server', 'server.js');
 
   serverProcess = spawn(process.execPath, [serverPath], {
