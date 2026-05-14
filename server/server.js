@@ -58,14 +58,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * When running as plain `node server.js` (dev mode), fall back to the
  * classic path next to server.js — no behaviour change for developers.
  */
-let DB_PATH;
-if (process.versions.electron) {
-  // Dynamically import electron to avoid a hard dependency in dev mode.
-  const { app: electronApp } = await import('electron');
-  DB_PATH = process.env.DB_PATH || path.join(electronApp.getPath('userData'), 'bins.db');
-} else {
-  DB_PATH = process.env.DB_PATH || path.join(__dirname, 'bins.db');
-}
+// DB_PATH is always provided by electron/main.js via the DB_PATH env variable in production.
+// In plain dev (node server.js), it falls back to a local bins.db next to server.js.
+// Never import 'electron' here — this file runs under plain system Node, not Electron.
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'bins.db');
+
 
 // ── Database Setup ──────────────────────────────────────────────────────────
 

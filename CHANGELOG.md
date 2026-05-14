@@ -2,7 +2,9 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
-| v2.13.2 | 2026-05-13 | 🔧 Fix         | Resolved Electron black screen and native OS menu bar display issues                              |
+| v2.13.3 | 2026-05-14 | 🔧 Fix         | Fixed blank screen in packaged Electron app and optimized build toolchain        |
+| v2.13.2 | 2026-05-13 | 🔧 Fix         | Resolved Electron blank screen by externalizing Express backend via extraResources                |
+
 | v2.13.1 | 2026-05-13 | 🔧 Fix         | Rewrote `release.bat` as `release.ps1` to eliminate CMD `setlocal` recursion error               |
 | v2.13.0 | 2026-05-13 | 🚀 Update      | Electron .exe packaging with silent GitHub Releases auto-updater and AppData-safe DB persistence  |
 | v2.12.0 | 2026-05-05 | 📊 Analytics   | Added fleet-wide fill cycle aggregation in AnalyticsSection  |
@@ -43,15 +45,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [v2.13.3] — 2026-05-14
+
+### Summary
+
+Fixed a critical issue where the packaged Electron application would display a blank screen due to incorrect resource paths, network resolution failures on the `file://` protocol, and native module ABI mismatches.
+
+### Fixed
+
+- **`client/src/utils/constants.js`** — Implemented a fallback to `localhost` when `window.location.hostname` is empty (standard in production Electron) to ensure API and WebSocket connections resolve correctly.
+- **`client/src/AuthContext.jsx`** — Synchronized authentication logic to use shared constants, eliminating redundant and fragile local host detection.
+- **`electron/main.js`** — Corrected the production `server` path to include the `/app` subdirectory required by `asar` packaging. Replaced the static 1500ms startup delay with a robust `net.Socket` polling mechanism that waits until the Express server is actually listening on port 3001.
+- **`server/server.js`** — Simplified `DB_PATH` logic and removed an illegal `import('electron')` that caused crashes in the plain Node child process.
+- **`package.json`** — Rewrote the `rebuild` script to target the system Node runtime instead of Electron, ensuring `better-sqlite3` is compiled against the correct ABI for the background server process.
+
+---
+
+
 ## [v2.13.2] — 2026-05-13
 
 ### Summary
 
-Resolved visual polish issues on initial launch of the packaged Electron app. Removed the default OS application menu bar and resolved blank/black screen loads by relative-linking Vite asset builds.
+Resolved visual polish issues and a critical backend startup failure on initial launch of the packaged Electron app. Externalized the spawned Express/WS node server to `extraResources` so that all dependency modules (including `express`, `better-sqlite3`, etc.) are preserved intact on packaging, enabling successful production launch while keeping ASAR enabled for secure frontend SPA compilation.
 
 ### Fixed
 
-- **`electron/main.js`** — Removed the native OS menu bar using `Menu.setApplicationMenu(null)` to maximize dashboard viewport real estate and match premium styling.
+- **`package.json`** — Externalized the `server/` directory using `extraResources` with optimized exclusions (ignoring temporary developer DB files) to ensure the system Node process can resolve and launch the server successfully in production without sub-module pruning. Retained `"asar": true` to protect and optimize client SPA assets.
+- **`electron/main.js`** — Updated `startServer()` to spawn the background Express backend directly from `process.resourcesPath/server` in production. Removed the native OS menu bar using `Menu.setApplicationMenu(null)` to maximize dashboard viewport real estate and match premium styling.
 - **`client/vite.config.js`** — Explicitly configured `base: "./"` and disabled default automatic browser opening (`server.open: false`) to support local filesystem-safe module resolving within the bundled Electron window.
 - **`client/electron/`** — Cleaned up redundant duplicate/nested `electron/` directory inside `client/` to maintain codebase structure sanity.
 

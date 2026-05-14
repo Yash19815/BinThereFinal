@@ -21,22 +21,24 @@ function startServer() {
   const serverDir = isDev
     ? path.join(ROOT, 'server')
     : path.join(process.resourcesPath, 'app', 'server');
-
   const serverFile = path.join(serverDir, 'server.js');
-
-  // Must use the system `node` binary — process.execPath is the Electron binary
   const nodeBin = process.platform === 'win32' ? 'node.exe' : 'node';
-
+  // Store DB in userData so it survives updates and is never inside a read-only install dir
+  const dbPath = path.join(app.getPath('userData'), 'bins.db');
   serverProcess = spawn(nodeBin, [serverFile], {
     cwd: serverDir,
-    env: { ...process.env, NODE_ENV: 'production' },
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      DB_PATH: dbPath,
+    },
     stdio: 'inherit',
     shell: false,
   });
-
   serverProcess.on('error', err => console.error('[Server] spawn error:', err));
   serverProcess.on('exit', code => console.log(`[Server] exited with code ${code}`));
 }
+
 
 /**
  * Create the main BrowserWindow.
@@ -67,10 +69,24 @@ async function createWindow() {
     // Dev: connect to the running Vite dev server for HMR
     win.loadURL('http://localhost:5173');
   } else {
-    // Prod: give Express 1500ms to bind port 3001 before loading the SPA
-    await new Promise(r => setTimeout(r, 1500));
+    // Prod: poll until Express is actually listening on port 3001 (max 15s)
+    const { default: net } = await import('net');
+    await new Promise((resolve) => {
+      const MAX_TRIES = 150; // 150 × 100ms = 15 seconds max
+      let tries = 0;
+      function probe() {
+        const sock = new net.Socket();
+        sock.setTimeout(80);
+        sock.on('connect', () => { sock.destroy(); resolve(); });
+        sock.on('error', () => { sock.destroy(); if (++tries < MAX_TRIES) setTimeout(probe, 100); else resolve(); });
+        sock.on('timeout', () => { sock.destroy(); if (++tries < MAX_TRIES) setTimeout(probe, 100); else resolve(); });
+        sock.connect(3001, '127.0.0.1');
+      }
+      probe();
+    });
     win.loadFile(path.join(ROOT, 'client', 'dist', 'index.html'));
   }
+
 
   win.once('ready-to-show', () => win.show());
   win.on('closed', () => { win = null; });

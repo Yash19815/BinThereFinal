@@ -1,6 +1,6 @@
 {
   "name": "binthere-dustbin-monitor",
-  "version": "2.13.1",
+  "version": "2.13.3",
   "description": "Smart dustbin monitoring web app using ESP32 ultrasonic sensors — real-time fill level dashboard.",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "format": "npx prettier --write .",
     "electron:dev": "concurrently --names \"server,client,electron\" --prefix-colors \"green,blue,magenta\" \"npm run dev --prefix server\" \"wait-on tcp:3001 && npm run dev --prefix client\" \"wait-on tcp:3001 tcp:5173 && electron .\"",
     "electron:build": "npm run build --prefix client && npm run rebuild && electron-builder --win --x64",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "rebuild": "node -e \"const v=process.version.slice(1); require('child_process').execSync('npm rebuild better-sqlite3 --runtime=node --target='+v, {cwd:'server', stdio:'inherit'})\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
@@ -26,6 +26,7 @@
     "wait-on": "^9.0.5"
   },
   "build": {
+    "asar": true,
     "appId": "com.binthere.dashboard",
     "productName": "BinThere",
     "directories": {
@@ -43,11 +44,20 @@
     },
     "files": [
       "electron/**/*",
-      "client/dist/**/*",
-      "server/**/*",
-      "server/node_modules/**/*"
+      "client/dist/**/*"
     ],
-    "extraResources": []
+    "extraResources": [
+      {
+        "from": "server",
+        "to": "server",
+        "filter": [
+          "**/*",
+          "!bins.db",
+          "!bins.db-shm",
+          "!bins.db-wal"
+        ]
+      }
+    ]
   },
   "repository": {
     "type": "git",

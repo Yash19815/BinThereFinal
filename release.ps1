@@ -82,54 +82,52 @@ try {
     if ($LASTEXITCODE -eq 0) {
         $releaseExists = $true
         $releaseJson   = $existingRelease | ConvertFrom-Json
-        $assetExists   = ($releaseJson.assets | Where-Object { $_.name -eq $EXE_NAME }).Count -gt 0
+        $exeAssets = $releaseJson.assets | Where-Object { $_.name -like "*.exe" }
+        $assetExists = $exeAssets.Count -gt 0
+        if ($assetExists) {
+            Write-Host "  [INFO] Found existing .exe assets on $TAG :" -ForegroundColor DarkGray
+            $exeAssets | ForEach-Object { Write-Host "         - $($_.name)" -ForegroundColor DarkGray }
+        }
     }
 } catch { }
 
 if ($releaseExists -and $assetExists) {
     Write-Host ""
-    Write-Host "  ⚠  Release $TAG already exists on GitHub AND already has an .exe asset ($EXE_NAME)." -ForegroundColor Yellow
+    Write-Host "  ⚠  Release $TAG already has a .exe on GitHub:" -ForegroundColor Yellow
+    $exeAssets | ForEach-Object { Write-Host "     - $($_.name)" -ForegroundColor Yellow }
     Write-Host ""
-    Write-Host "  Options:" -ForegroundColor White
-    Write-Host "    [1] Enter a new version number and continue" -ForegroundColor White
-    Write-Host "    [2] Overwrite — delete the existing asset and re-upload" -ForegroundColor White
-    Write-Host "    [3] Abort" -ForegroundColor White
+    Write-Host "  You must bump the version to continue." -ForegroundColor White
     Write-Host ""
 
-    $choice = Read-Host "  Enter choice (1/2/3)"
+    :versionLoop while ($true) {
+        $newVersion = (Read-Host "  Enter new version (e.g. 2.14.0)").Trim()
 
-    switch ($choice.Trim()) {
-        "1" {
-            $newVersion = Read-Host "  Enter new version (e.g. 2.14.0)"
-            $newVersion = $newVersion.Trim()
-            if (-not ($newVersion -match "^\d+\.\d+\.\d+$")) {
-                Write-Host "  ERROR: Invalid version format. Use MAJOR.MINOR.PATCH (e.g. 2.14.0)" -ForegroundColor Red
-                Read-Host "Press Enter to exit"
-                exit 1
-            }
-            # Patch package.json version in-place using node (avoids regex/escape issues)
-            node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version='$newVersion';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n','utf8');"
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "  ERROR: Failed to update version in package.json." -ForegroundColor Red
-                Read-Host "Press Enter to exit"
-                exit 1
-            }
-            $VERSION  = $newVersion
-            $TAG      = "v$VERSION"
-            $EXE_NAME = "BinThere-Setup-$VERSION.exe"
-            Write-Host "  [OK] Version updated to $VERSION in package.json." -ForegroundColor Green
-            Write-Host "  NOTE: Remember to add a matching ## [v$VERSION] section to CHANGELOG.md" -ForegroundColor Yellow
-            Write-Host ""
-        }
-        "2" {
-            Write-Host "  [INFO] Will overwrite existing asset on upload (--clobber)." -ForegroundColor DarkGray
-            Write-Host ""
-        }
-        default {
+        if ($newVersion -eq "") {
             Write-Host "  Aborted." -ForegroundColor Red
             exit 0
         }
+        if (-not ($newVersion -match "^\d+\.\d+\.\d+$")) {
+            Write-Host "  Invalid format. Use MAJOR.MINOR.PATCH — try again (or press Enter to abort)." -ForegroundColor Red
+            continue versionLoop
+        }
+
+        # Patch package.json using node
+        node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version='$newVersion';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n','utf8');"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  ERROR: Failed to update version in package.json." -ForegroundColor Red
+            Read-Host "Press Enter to exit"
+            exit 1
+        }
+
+        $VERSION  = $newVersion
+        $TAG      = "v$VERSION"
+        $EXE_NAME = "BinThere-Setup-$VERSION.exe"
+        Write-Host "  [OK] Version bumped to $VERSION." -ForegroundColor Green
+        Write-Host "  NOTE: Remember to add ## [v$VERSION] to CHANGELOG.md" -ForegroundColor Yellow
+        Write-Host ""
+        break versionLoop
     }
+
 } elseif ($releaseExists) {
     Write-Host "  [INFO] Release $TAG exists but has no matching .exe asset — will upload fresh." -ForegroundColor DarkGray
     Write-Host ""
@@ -181,7 +179,15 @@ Write-Host ""
 # ── [4/6] Clean old build artefacts ───────────────────────────────────────────
 Write-Host "[4/6] Cleaning old build directories..." -ForegroundColor Yellow
 
+# Kill any existing processes that might lock files in dist-electron
+Write-Host "  Terminating existing app processes..." -ForegroundColor DarkGray
+taskkill /F /IM BinThere.exe /T 2>$null | Out-Null
+taskkill /F /IM node.exe /FI "WINDOWTITLE eq BinThere*" /T 2>$null | Out-Null
+# Small pause to let OS release file handles
+Start-Sleep -Seconds 2
+
 if (Test-Path "dist-electron") { Remove-Item -Recurse -Force "dist-electron" }
+
 if (Test-Path "client\dist")   { Remove-Item -Recurse -Force "client\dist" }
 
 Write-Host "  [OK] dist-electron/ and client/dist/ removed." -ForegroundColor Green
