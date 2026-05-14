@@ -2,6 +2,7 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| v2.13.6 | 2026-05-14 | 🔧 Fix         | Standardized backend server spawn logic with stdout piping and startup delay      |
 | v2.13.5 | 2026-05-14 | 🔧 Fix         | Simplified production server path resolution in `electron/main.js`                |
 | v2.13.4 | 2026-05-14 | 🔧 Fix         | Resolved server startup failure (ASAR unpacking) and fixed logo asset resolution in production    |
 | v2.13.3 | 2026-05-14 | 🔧 Fix         | Fixed blank screen in packaged Electron app and optimized build toolchain        |
@@ -43,6 +44,18 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+## [v2.13.6] — 2026-05-14
+
+### Summary
+
+Standardized the backend server spawning mechanism in the Electron main process for improved reliability and observability.
+
+### Fixed
+
+- **`electron/main.js`** — Refactored `startServer()` to pipe backend stdout/stderr to the main process console with a `[BinThere Server]` prefix.
+- **`electron/main.js`** — Implemented a mandatory 2000ms delay before `createWindow()` to ensure the Express backend is ready.
+- **`electron/main.js`** — Added a `before-quit` listener to explicitly kill the backend child process via `SIGTERM`, preventing zombie node processes.
 
 ---
 

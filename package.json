@@ -1,10 +1,9 @@
 {
   "name": "binthere-dustbin-monitor",
-  "version": "2.13.5",
+  "version": "2.13.6",
   "description": "Smart dustbin monitoring web app using ESP32 ultrasonic sensors — real-time fill level dashboard.",
   "private": true,
-  "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
     "configure": "node scripts/setup.cjs",
@@ -14,22 +13,22 @@
     "client": "npm run dev --prefix client",
     "kill-port": "npx kill-port 3001 5173 5174",
     "format": "npx prettier --write .",
-    "electron:dev": "concurrently --names \"server,client,electron\" --prefix-colors \"green,blue,magenta\" \"npm run dev --prefix server\" \"wait-on tcp:3001 && npm run dev --prefix client\" \"wait-on tcp:3001 tcp:5173 && electron .\"",
-    "electron:build": "npm run build --prefix client && npm run rebuild && electron-builder --win --x64",
+    "electron:dev": "concurrently --names \"client,electron\" --prefix-colors \"blue,magenta\" \"wait-on tcp:3001 && npm run dev --prefix client\" \"electron .\"",
+    "electron:build": "npm run build --prefix client && npx @electron/rebuild -f -w better-sqlite3 --module-dir server -v 30.5.1 && electron-builder --win --x64",
     "rebuild": "node -e \"const v=process.version.slice(1); require('child_process').execSync('npm rebuild better-sqlite3 --runtime=node --target='+v, {cwd:'server', stdio:'inherit'})\""
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
+    "@electron/rebuild": "^4.0.4",
+    "concurrently": "^9.2.1",
     "electron": "^30.5.1",
     "electron-builder": "^24.13.3",
     "electron-rebuild": "^3.2.9",
-    "wait-on": "^9.0.5"
+    "wait-on": "^9.0.10"
   },
   "build": {
     "asar": true,
     "asarUnpack": [
-      "server/**",
-      "server/node_modules/better-sqlite3/**"
+      "server/**"
     ],
     "appId": "com.binthere.dashboard",
     "productName": "BinThere",
@@ -49,9 +48,9 @@
     "files": [
       "electron/**/*",
       "client/dist/**/*",
-      "server/**/*"
-    ],
-    "extraResources": []
+      "server/**/*",
+      "server/node_modules/**/*"
+    ]
   },
   "repository": {
     "type": "git",
