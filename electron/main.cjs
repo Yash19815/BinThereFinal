@@ -1,6 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { fork } = require('child_process');
-const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
@@ -41,7 +40,7 @@ function waitForPort(port, timeout = 15000) {
 // ─── Spawn the Node backend ───────────────────────────────────────────────────
 function startBackend() {
   const serverPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'server', 'server.js')
+    ? path.join(process.resourcesPath, 'server', 'server.js') // <--- Corrected for extraResources
     : path.join(__dirname, '..', 'server', 'server.js');
 
   const logFile = path.join(app.getPath('userData'), 'backend-crash.log');
@@ -76,12 +75,15 @@ function createWindow() {
     height: 800,
     title: 'BinThere Fleet Dashboard',
     icon: path.join(__dirname, 'icon.ico'),
+    autoHideMenuBar: true, // Hides it when pressing 'Alt'
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+
+  mainWindow.setMenu(null); // <--- Removes the File/Edit/View menu completely
 
   if (app.isPackaged) {
     mainWindow.loadFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));

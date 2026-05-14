@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import NotificationPanel from "./NotificationPanel";
 import { ALERT_THRESHOLD } from "../../utils/constants";
 
+// IMPORT THE LOGO FROM THE ASSETS FOLDER
+import myLogo from "../../assets/logo.png";
+
 /**
  * Application header bar containing the logo, WebSocket status indicator,
  * notification bell with dropdown, and a profile menu.
@@ -39,7 +42,7 @@ export default function Header({ bins, wsStatus, user, onLogout }) {
       <div className="header-logo">
         <img
           className="logo-icon"
-          src="/47983e4f2244acd2659cb948cc4e3431517267ad.png"
+          src={myLogo} 
           alt="BinThere Logo"
         />
       </div>

@@ -86,7 +86,7 @@ Write-Host ""
 
 # 4b. Rebuild better-sqlite3 native module
 Write-Host "  [4b] Rebuilding native modules (better-sqlite3)..." -ForegroundColor White
-npm run rebuild
+npm run rebuild:sqlite
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ERROR: Native module rebuild failed." -ForegroundColor Red
     Write-Host "         Run 'npm install' from the project root and retry." -ForegroundColor Yellow

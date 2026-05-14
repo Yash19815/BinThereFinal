@@ -211,7 +211,7 @@ Write-Host ""
 
 # 5b. Rebuild better-sqlite3 for Electron's Node ABI
 Write-Host "  [5b] Rebuilding native modules for Electron (better-sqlite3)..." -ForegroundColor White
-npm run rebuild
+npm run rebuild:sqlite
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ERROR: electron-rebuild failed." -ForegroundColor Red
     Write-Host "         Run 'npm install' from the project root and retry." -ForegroundColor Yellow
