@@ -20,11 +20,10 @@ import {
   useCallback,
 } from "react";
 import toast from "react-hot-toast";
+import { API_URL } from "./utils/constants.js";
 
-const CURRENT_HOST = window.location.hostname || import.meta.env.VITE_API_URL;
 
-// Prioritize .env values, otherwise use the auto-detected host
-const API_URL = `http://${CURRENT_HOST}:3001`;
+
 
 /** @type {React.Context<AuthContextValue>} */
 const AuthContext = createContext(null);

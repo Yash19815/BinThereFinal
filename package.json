@@ -1,21 +1,61 @@
 {
   "name": "binthere-dustbin-monitor",
-  "version": "2.12.0",
+  "version": "2.13.7",
   "description": "Smart dustbin monitoring web app using ESP32 ultrasonic sensors — real-time fill level dashboard.",
   "private": true,
+  "main": "electron/main.cjs",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
-    "configure": "node scripts/setup.js",
+    "configure": "node scripts/setup.cjs",
     "dev": "concurrently --names \"server,client\" --prefix-colors \"green,blue\" \"npm run dev --prefix server\" \"wait-on tcp:3001 && npm run dev --prefix client\"",
     "start": "concurrently --names \"server,client\" --prefix-colors \"green,blue\" \"npm start --prefix server\" \"wait-on tcp:3001 && npm run dev --prefix client\"",
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "kill-port": "npx kill-port 3001 5173 5174",
-    "format": "npx prettier --write ."
+    "format": "npx prettier --write .",
+    "electron:dev": "concurrently --names \"client,electron\" --prefix-colors \"blue,magenta\" \"wait-on tcp:3001 && npm run dev --prefix client\" \"electron .\"",
+    "rebuild:sqlite": "cd server && npm rebuild better-sqlite3 --build-from-source --runtime=electron --target=30.5.1 --dist-url=https://electronjs.org/headers",
+    "electron:build": "npm run build --prefix client && npm run rebuild:sqlite && electron-builder --win --x64"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "wait-on": "^9.0.5"
+    "@electron/rebuild": "^4.0.4",
+    "concurrently": "^9.2.1",
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
+    "wait-on": "^9.0.10"
+  },
+  "build": {
+    "asar": true,
+    "appId": "com.binthere.dashboard",
+    "productName": "BinThere",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "files": [
+      "electron/**/*",
+      "client/dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "server",
+        "to": "server",
+        "filter": [
+          "**/*",
+          ".env"
+        ]
+      }
+    ]
   },
   "repository": {
     "type": "git",

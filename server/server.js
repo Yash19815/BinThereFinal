@@ -11,7 +11,7 @@
  *
  * Environment variables (set in server/.env):
  * PORT                   – HTTP + WS port (default: 3001)
- * DB_PATH                – Absolute path to SQLite file
+ * PROD_DB_DIR            – Directory for SQLite file (Production)
  * JWT_SECRET             – Secret key for signing JWTs
  * JWT_EXPIRES_IN         – Token lifetime (default: 7d)
  * DEFAULT_ADMIN_PASSWORD – Password for the seeded admin account
@@ -48,16 +48,24 @@ dotenv.config();
 // ESM-compatible __dirname equivalent
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Absolute path to the SQLite database file. Overridable via DB_PATH env var. */
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, "bins.db");
-
-// ── Database Setup ──────────────────────────────────────────────────────────
-
 /**
- * Synchronous SQLite connection. better-sqlite3 uses blocking I/O which is
- * appropriate here — reads/writes are fast and never overlap with async code.
+ * Absolute path to the SQLite database file.
+ *
+ * When running inside the packaged Electron app, store the database in
+ * AppData/Roaming/BinThere so it is OUTSIDE the install directory and
+ * survives every silent NSIS update (deleteAppDataOnUninstall: false).
+ *
+ * When running as plain `node server.js` (dev mode), fall back to the
+ * classic path next to server.js — no behaviour change for developers.
  */
-const db = new Database(DB_PATH);
+// DB_PATH is always provided by electron/main.js via the DB_PATH env variable in production.
+// In plain dev (node server.js), it falls back to a local bins.db next to server.js.
+// Never import 'electron' here — this file runs under plain system Node, not Electron.
+// If PROD_DB_DIR exists (Electron Prod), use it. Otherwise, use local directory (Dev).
+const dbDir = process.env.PROD_DB_DIR || __dirname; 
+const dbPath = path.join(dbDir, 'database.sqlite');
+
+const db = new Database(dbPath);
 
 /**
  * Enable Write-Ahead Log mode.
