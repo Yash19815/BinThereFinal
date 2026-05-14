@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { useAuth } from "./AuthContext";
+import binThereLogo from "./assets/logo.png";
 
 /**
  * Full-screen login page shown when the user is not authenticated.
@@ -43,11 +44,7 @@ export default function LoginPage() {
       <div className={`login-card${shake ? " login-card--shake" : ""}`}>
         {/* Logo / Brand */}
         <div className="login-brand">
-          <img
-            src="/47983e4f2244acd2659cb948cc4e3431517267ad.png"
-            alt="BinThere logo"
-            className="login-logo"
-          />
+          <img src={binThereLogo} alt="BinThere logo" className="login-logo" />
           <h1 className="login-title">BinThere</h1>
           <p className="login-subtitle">Smart Dustbin Monitoring</p>
         </div>

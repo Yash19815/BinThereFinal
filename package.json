@@ -1,6 +1,6 @@
 {
   "name": "binthere-dustbin-monitor",
-  "version": "2.13.3",
+  "version": "2.13.5",
   "description": "Smart dustbin monitoring web app using ESP32 ultrasonic sensors — real-time fill level dashboard.",
   "private": true,
   "type": "module",
@@ -27,6 +27,10 @@
   },
   "build": {
     "asar": true,
+    "asarUnpack": [
+      "server/**",
+      "server/node_modules/better-sqlite3/**"
+    ],
     "appId": "com.binthere.dashboard",
     "productName": "BinThere",
     "directories": {
@@ -44,20 +48,10 @@
     },
     "files": [
       "electron/**/*",
-      "client/dist/**/*"
+      "client/dist/**/*",
+      "server/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "server",
-        "to": "server",
-        "filter": [
-          "**/*",
-          "!bins.db",
-          "!bins.db-shm",
-          "!bins.db-wal"
-        ]
-      }
-    ]
+    "extraResources": []
   },
   "repository": {
     "type": "git",

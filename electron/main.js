@@ -20,17 +20,25 @@ let win, serverProcess;
 function startServer() {
   const serverDir = isDev
     ? path.join(ROOT, 'server')
-    : path.join(process.resourcesPath, 'app', 'server');
+    : path.join(process.resourcesPath, 'server');
   const serverFile = path.join(serverDir, 'server.js');
-  const nodeBin = process.platform === 'win32' ? 'node.exe' : 'node';
+
+  // In production, use the Electron binary itself to run the server
+  // This removes dependency on system node and works with ESM.
+  const nodeBin = isDev
+    ? (process.platform === 'win32' ? 'node.exe' : 'node')
+    : process.execPath;
+
   // Store DB in userData so it survives updates and is never inside a read-only install dir
   const dbPath = path.join(app.getPath('userData'), 'bins.db');
+
   serverProcess = spawn(nodeBin, [serverFile], {
     cwd: serverDir,
     env: {
       ...process.env,
       NODE_ENV: 'production',
       DB_PATH: dbPath,
+      ELECTRON_RUN_AS_NODE: '1', // Required when using process.execPath to run a script
     },
     stdio: 'inherit',
     shell: false,

@@ -2,9 +2,10 @@
 
 | Version | Date       | Type           | Summary                                                                                           |
 | ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| v2.13.5 | 2026-05-14 | 🔧 Fix         | Simplified production server path resolution in `electron/main.js`                |
+| v2.13.4 | 2026-05-14 | 🔧 Fix         | Resolved server startup failure (ASAR unpacking) and fixed logo asset resolution in production    |
 | v2.13.3 | 2026-05-14 | 🔧 Fix         | Fixed blank screen in packaged Electron app and optimized build toolchain        |
 | v2.13.2 | 2026-05-13 | 🔧 Fix         | Resolved Electron blank screen by externalizing Express backend via extraResources                |
-
 | v2.13.1 | 2026-05-13 | 🔧 Fix         | Rewrote `release.bat` as `release.ps1` to eliminate CMD `setlocal` recursion error               |
 | v2.13.0 | 2026-05-13 | 🚀 Update      | Electron .exe packaging with silent GitHub Releases auto-updater and AppData-safe DB persistence  |
 | v2.12.0 | 2026-05-05 | 📊 Analytics   | Added fleet-wide fill cycle aggregation in AnalyticsSection  |
@@ -42,6 +43,33 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+---
+
+## [v2.13.5] — 2026-05-14
+
+### Summary
+
+Simplified the production path resolution for the background Express server.
+
+### Fixed
+
+- **`electron/main.js`** — Updated `startServer()` to resolve the server directory directly from `process.resourcesPath/server`. This aligns with the `asarUnpack` behavior where the directory is placed in the root `resources` folder of the packaged application.
+
+---
+
+## [v2.13.4] — 2026-05-14
+
+### Summary
+
+Resolved the final production build blockers by ensuring the backend server is correctly unpacked from the ASAR archive and fixing broken asset resolution in the renderer process.
+
+### Fixed
+
+- **`package.json`** — Added `asarUnpack` for the `server/` directory, allowing the Node child process to access ESM modules and the `better-sqlite3` native binary outside the virtual archive.
+- **`electron/main.js`** — Updated `startServer()` to resolve paths to the `app.asar.unpacked` directory and switched to `process.execPath` to utilize the bundled Electron binary for server execution.
+- **`client/src/LoginPage.jsx`** — Refactored the login logo to use a standard ES6 import (`logo.png`). This ensures Vite correctly bundles the asset and resolves its path, fixing the broken image bug caused by absolute `file://` pathing.
+- **Assets** — Relocated the brand logo to `client/src/assets/logo.png` for proper bundling.
 
 ---
 
