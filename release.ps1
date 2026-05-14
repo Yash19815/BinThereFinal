@@ -20,8 +20,14 @@ Write-Host ""
 
 $REPO = "Yash19815/BinThere-Dashboard"
 
-# ── [1/6] Check prerequisites ─────────────────────────────────────────────────
-Write-Host "[1/6] Checking prerequisites..." -ForegroundColor Yellow
+# ── [1/7] Check prerequisites ─────────────────────────────────────────────────
+Write-Host "[1/7] Checking prerequisites..." -ForegroundColor Yellow
+
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host "  ERROR: Git is not installed or not in PATH." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
+}
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     Write-Host ""
@@ -51,8 +57,8 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "  [OK] All prerequisites satisfied." -ForegroundColor Green
 Write-Host ""
 
-# ── [2/6] Read version from root package.json ─────────────────────────────────
-Write-Host "[2/6] Reading version from package.json..." -ForegroundColor Yellow
+# ── [2/7] Read version from root package.json ─────────────────────────────────
+Write-Host "[2/7] Reading version from package.json..." -ForegroundColor Yellow
 
 $packageJson = Get-Content -Raw -Path "package.json" | ConvertFrom-Json
 $VERSION = $packageJson.version
@@ -136,8 +142,8 @@ if ($releaseExists -and $assetExists) {
     Write-Host ""
 }
 
-# ── [3/6] Parse release notes from CHANGELOG.md ───────────────────────────────
-Write-Host "[3/6] Extracting release notes from CHANGELOG.md..." -ForegroundColor Yellow
+# ── [3/7] Parse release notes from CHANGELOG.md ───────────────────────────────
+Write-Host "[3/7] Extracting release notes from CHANGELOG.md..." -ForegroundColor Yellow
 
 $changelogContent = Get-Content -Path "CHANGELOG.md" -Encoding UTF8
 $targetHeader     = "## [v$VERSION]"
@@ -176,8 +182,36 @@ Set-Content -Path $tempNotesFile -Value $releaseNotes -Encoding UTF8
 Write-Host "  [OK] Release notes extracted for $TAG" -ForegroundColor Green
 Write-Host ""
 
-# ── [4/6] Clean old build artefacts ───────────────────────────────────────────
-Write-Host "[4/6] Cleaning old build directories..." -ForegroundColor Yellow
+# ── [4/7] Sync Source Code to GitHub ──────────────────────────────────────────
+Write-Host "[4/7] Committing and pushing source code to GitHub..." -ForegroundColor Yellow
+
+if (git status --porcelain) {
+    Write-Host "  Uncommitted changes detected (like version bump or new code)." -ForegroundColor DarkGray
+    Write-Host "  Staging and committing..." -ForegroundColor DarkGray
+    git add .
+    git commit -m "chore: release $TAG" | Out-Null
+} else {
+    Write-Host "  No uncommitted changes detected locally." -ForegroundColor DarkGray
+}
+
+$currentBranch = git rev-parse --abbrev-ref HEAD
+Write-Host "  Pushing to origin/$currentBranch..." -ForegroundColor DarkGray
+git push origin $currentBranch
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "  ERROR: Git push failed. Please resolve merge conflicts or permissions." -ForegroundColor Red
+    if (Test-Path $tempNotesFile) { Remove-Item $tempNotesFile -Force }
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+
+Write-Host "  [OK] Source code successfully synced to remote." -ForegroundColor Green
+Write-Host ""
+
+
+# ── [5/7] Clean old build artefacts ───────────────────────────────────────────
+Write-Host "[5/7] Cleaning old build directories..." -ForegroundColor Yellow
 
 # Kill any existing processes that might lock files in dist-electron
 Write-Host "  Terminating existing app processes..." -ForegroundColor DarkGray
@@ -193,12 +227,12 @@ if (Test-Path "client\dist")   { Remove-Item -Recurse -Force "client\dist" }
 Write-Host "  [OK] dist-electron/ and client/dist/ removed." -ForegroundColor Green
 Write-Host ""
 
-# ── [5/6] Build: frontend → rebuild native modules → electron-builder ──────────
-Write-Host "[5/6] Building Electron application..." -ForegroundColor Yellow
+# ── [6/7] Build: frontend → rebuild native modules → electron-builder ──────────
+Write-Host "[6/7] Building Electron application..." -ForegroundColor Yellow
 Write-Host ""
 
-# 5a. Vite frontend build
-Write-Host "  [5a] Building React Vite frontend..." -ForegroundColor White
+# 6a. Vite frontend build
+Write-Host "  [6a] Building React Vite frontend..." -ForegroundColor White
 npm run build --prefix client
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ERROR: Frontend build failed." -ForegroundColor Red
@@ -209,8 +243,8 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "  [OK] Frontend built." -ForegroundColor Green
 Write-Host ""
 
-# 5b. Rebuild better-sqlite3 for Electron's Node ABI
-Write-Host "  [5b] Rebuilding native modules for Electron (better-sqlite3)..." -ForegroundColor White
+# 6b. Rebuild better-sqlite3 for Electron's Node ABI
+Write-Host "  [6b] Rebuilding native modules for Electron (better-sqlite3)..." -ForegroundColor White
 npm run rebuild:sqlite
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ERROR: electron-rebuild failed." -ForegroundColor Red
@@ -222,8 +256,8 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "  [OK] Native modules rebuilt." -ForegroundColor Green
 Write-Host ""
 
-# 5c. Package with electron-builder
-Write-Host "  [5c] Packaging with electron-builder (this may take 2-5 minutes)..." -ForegroundColor White
+# 6c. Package with electron-builder
+Write-Host "  [6c] Packaging with electron-builder (this may take 2-5 minutes)..." -ForegroundColor White
 npx electron-builder --win --x64
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ERROR: electron-builder failed. Check output above." -ForegroundColor Red
@@ -236,8 +270,8 @@ Write-Host ""
 Write-Host "  [OK] Build completed." -ForegroundColor Green
 Write-Host ""
 
-# ── [6/6] Locate installer, rename, publish GitHub Release ────────────────────
-Write-Host "[6/6] Locating installer and publishing GitHub Release..." -ForegroundColor Yellow
+# ── [7/7] Locate installer, rename, publish GitHub Release ────────────────────
+Write-Host "[7/7] Locating installer and publishing GitHub Release..." -ForegroundColor Yellow
 
 # Find the .exe — prefer *Setup*.exe, fallback to any .exe in dist-electron
 $exeFiles = Get-ChildItem -Path "dist-electron" -Filter "*Setup*.exe" -ErrorAction SilentlyContinue
