@@ -11,7 +11,7 @@
  *
  * Environment variables (set in server/.env):
  * PORT                   – HTTP + WS port (default: 3001)
- * DB_PATH                – Absolute path to SQLite file
+ * PROD_DB_DIR            – Directory for SQLite file (Production)
  * JWT_SECRET             – Secret key for signing JWTs
  * JWT_EXPIRES_IN         – Token lifetime (default: 7d)
  * DEFAULT_ADMIN_PASSWORD – Password for the seeded admin account
@@ -61,16 +61,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // DB_PATH is always provided by electron/main.js via the DB_PATH env variable in production.
 // In plain dev (node server.js), it falls back to a local bins.db next to server.js.
 // Never import 'electron' here — this file runs under plain system Node, not Electron.
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'bins.db');
+// If PROD_DB_DIR exists (Electron Prod), use it. Otherwise, use local directory (Dev).
+const dbDir = process.env.PROD_DB_DIR || __dirname; 
+const dbPath = path.join(dbDir, 'database.sqlite');
 
-
-// ── Database Setup ──────────────────────────────────────────────────────────
-
-/**
- * Synchronous SQLite connection. better-sqlite3 uses blocking I/O which is
- * appropriate here — reads/writes are fast and never overlap with async code.
- */
-const db = new Database(DB_PATH);
+const db = new Database(dbPath);
 
 /**
  * Enable Write-Ahead Log mode.

@@ -1,6 +1,8 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { fork } = require('child_process');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const net = require('net');
 const { applyPendingInstall, silentUpdateCheck } = require('./updater.cjs');
 
@@ -38,21 +40,33 @@ function waitForPort(port, timeout = 15000) {
 
 // ─── Spawn the Node backend ───────────────────────────────────────────────────
 function startBackend() {
-  // package.json uses asarUnpack: ["server/**"] so the server is unpacked at:
-  // resources/app.asar.unpacked/server/server.js  (NOT resources/server/server.js)
   const serverPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'server.js')
+    ? path.join(process.resourcesPath, 'server', 'server.js')
     : path.join(__dirname, '..', 'server', 'server.js');
 
-  serverProcess = spawn(process.execPath, [serverPath], {
+  const logFile = path.join(app.getPath('userData'), 'backend-crash.log');
+  fs.writeFileSync(logFile, `--- NEW SESSION STARTED ---\nServer Path: ${serverPath}\n`);
+
+  // 1. Failsafe: Check if the builder actually unpacked the file!
+  if (!fs.existsSync(serverPath)) {
+    fs.appendFileSync(logFile, `[CRITICAL ERROR] The server.js file does not exist at ${serverPath}.\nThis means asarUnpack failed during the build process.\n`);
+    return;
+  }
+
+  // 2. Use fork instead of spawn for better Electron compatibility
+  serverProcess = fork(serverPath, [], {
     cwd: path.dirname(serverPath),
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-    stdio: 'inherit',
+    env: { 
+      ...process.env, 
+      PROD_DB_DIR: app.getPath('userData') 
+    },
+    stdio: ['ignore', 'pipe', 'pipe', 'ipc']
   });
 
-  serverProcess.on('error', (err) => {
-    console.error('[Main] Backend failed to start:', err);
-  });
+  serverProcess.stdout.on('data', (data) => fs.appendFileSync(logFile, `[STDOUT] ${data}\n`));
+  serverProcess.stderr.on('data', (data) => fs.appendFileSync(logFile, `[STDERR] ${data}\n`));
+  serverProcess.on('error', (err) => fs.appendFileSync(logFile, `[FORK ERROR] ${err}\n`));
+  serverProcess.on('exit', (code) => fs.appendFileSync(logFile, `[EXIT] Process exited with code ${code}\n`));
 }
 
 // ─── Create the Electron window ───────────────────────────────────────────────
@@ -82,29 +96,27 @@ function createWindow() {
 
 // ─── App lifecycle ────────────────────────────────────────────────────────────
 
-// Handle IPC version request
 ipcMain.handle('app-version', () => app.getVersion());
 
 app.whenReady().then(async () => {
-  // 1. Check if there is an update pending from a previous session
   applyPendingInstall();
-
-  // 2. Start backend
   startBackend();
 
-  // 3. Wait for backend to be ready
-  await waitForPort(3001).catch(() => {
-    console.error('[Main] Backend did not start in time');
+  // Wait for backend to be ready, show native error if it fails
+  await waitForPort(3001).catch((err) => {
+    const logPath = path.join(app.getPath('userData'), 'backend-crash.log');
+    dialog.showErrorBox(
+      'Backend Failed to Start', 
+      `The server crashed. Please check the log file at:\n\n${logPath}`
+    );
   });
 
-  // 4. Show UI
   createWindow();
 
-  // 5. Check for updates in the background
   if (app.isPackaged) {
     setTimeout(() => {
       silentUpdateCheck();
-    }, 5000); // Wait 5s to avoid competing with startup
+    }, 5000);
   }
 
   app.on('activate', () => {

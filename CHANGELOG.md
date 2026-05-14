@@ -1,49 +1,66 @@
 # Changelog
 
-| Version | Date       | Type           | Summary                                                                                           |
-| ------- | ---------- | -------------- | ------------------------------------------------------------------------------------------------- |
-| v2.13.6 | 2026-05-14 | 🔧 Fix         | Standardized backend server spawn logic with stdout piping and startup delay      |
-| v2.13.5 | 2026-05-14 | 🔧 Fix         | Simplified production server path resolution in `electron/main.js`                |
-| v2.13.4 | 2026-05-14 | 🔧 Fix         | Resolved server startup failure (ASAR unpacking) and fixed logo asset resolution in production    |
-| v2.13.3 | 2026-05-14 | 🔧 Fix         | Fixed blank screen in packaged Electron app and optimized build toolchain        |
-| v2.13.2 | 2026-05-13 | 🔧 Fix         | Resolved Electron blank screen by externalizing Express backend via extraResources                |
-| v2.13.1 | 2026-05-13 | 🔧 Fix         | Rewrote `release.bat` as `release.ps1` to eliminate CMD `setlocal` recursion error               |
-| v2.13.0 | 2026-05-13 | 🚀 Update      | Electron .exe packaging with silent GitHub Releases auto-updater and AppData-safe DB persistence  |
-| v2.12.0 | 2026-05-05 | 📊 Analytics   | Added fleet-wide fill cycle aggregation in AnalyticsSection  |
-| v2.11.1 | 2026-04-30 | 🔧 Fix         | Fixed duplicate dustbin creation, cascading deletion bug, and missing individual bin history      |
-| v2.11.0 | 2026-04-26 | 🚀 Update      | Documentation overhaul and restoration of the missing Heatmap backend endpoint     |
+| Version | Date       | Type           | Summary                                                                                            |
+| ------- | ---------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| v2.13.7 | 2026-05-14 | 🔧 Fix         | Migrated to extraResources and refactored backend spawn logic for improved stability               |
+| v2.13.6 | 2026-05-14 | 🔧 Fix         | Standardized backend server spawn logic with stdout piping and startup delay                       |
+| v2.13.5 | 2026-05-14 | 🔧 Fix         | Simplified production server path resolution in `electron/main.js`                                 |
+| v2.13.4 | 2026-05-14 | 🔧 Fix         | Resolved server startup failure (ASAR unpacking) and fixed logo asset resolution in production     |
+| v2.13.3 | 2026-05-14 | 🔧 Fix         | Fixed blank screen in packaged Electron app and optimized build toolchain                          |
+| v2.13.2 | 2026-05-13 | 🔧 Fix         | Resolved Electron blank screen by externalizing Express backend via extraResources                 |
+| v2.13.1 | 2026-05-13 | 🔧 Fix         | Rewrote `release.bat` as `release.ps1` to eliminate CMD `setlocal` recursion error                 |
+| v2.13.0 | 2026-05-13 | 🚀 Update      | Electron .exe packaging with silent GitHub Releases auto-updater and AppData-safe DB persistence   |
+| v2.12.0 | 2026-05-05 | 📊 Analytics   | Added fleet-wide fill cycle aggregation in AnalyticsSection                                        |
+| v2.11.1 | 2026-04-30 | 🔧 Fix         | Fixed duplicate dustbin creation, cascading deletion bug, and missing individual bin history       |
+| v2.11.0 | 2026-04-26 | 🚀 Update      | Documentation overhaul and restoration of the missing Heatmap backend endpoint                     |
 | v2.10.0 | 2026-04-25 | 🔧 Fix         | Critical fill-level formula fix, input validation, broadcast optimization, and test script rewrite |
-| v2.9.0  | 2026-04-24 | ⚡ Performance | Backend bottleneck elimination: async auth, DB indexing, fleet caching, and batched purge         |
-| v2.8.0  | 2026-04-24 | 🎨 UI          | Enhanced dropdown opacity and implemented click-outside-to-close behavior for Header navigation   |
-| v2.7.0  | 2026-04-23 | 🔧 Fix         | Resolved Export API 404 and expanded UI visuals                                                   |
-| v2.6.0  | 2026-04-23 | 🔧 Fix         | Logic Inversion: Small distance now maps to Empty; Restored Traffic Light (G/Y/R) visuals         |
-| v2.5.2  | 2026-04-23 | 🎨 UI          | Color Refinement: Restored waste-type identity (Blue/Green) with status-aware alert transitions   |
-| v2.5.1  | 2026-04-23 | 🪄 Magic       | High-Fidelity Visual Refinement: 3D glass cylinders, kinetic shimmer, and status-aware glow auras |
-| v2.5.0  | 2026-04-23 | 🎨 UI          | Frosted Control Room: Redesigned dashboard hero, industrial bin cards, and sidebar export tool    |
-| v2.4.4  | 2026-04-23 | 🚀 Update      | Sequential Startup & Advanced Logging: Backend-first initialization and comprehensive event logs  |
-| v2.4.3  | 2026-04-21 | 🎨 UI          | Premium Dialogs: Replaced browser alerts/prompts with a "Frosted Control Room" glassmorphic modal |
-| v2.4.2  | 2026-04-21 | 📝 Docs        | Documentation Overhaul: Modernized CONTRIBUTING.md with automated setup and UI tokens             |
-| v2.4.1  | 2026-04-20 | ✨ Feature     | Default Bin Seeding: Ensures 1 dustbin exists on first run while supporting dynamic additions     |
-| v2.4.0  | 2026-04-20 | 📊 Export      | Premium Reporting: Executive Summaries, predictive maintenance analytics, and date presets        |
-| v2.3.1  | 2026-04-19 | 📝 Docs        | Updated License from MIT to Apache 2.0                                                            |
-| v2.3.0  | 2026-04-19 | 🎨 UI          | "Frosted Control Room" glassmorphism overhaul and light theme elimination                         |
-| v2.2.0  | 2026-04-19 | 🎨 UI          | Redesigned Utilization Score card, Export to Excel UI, and native dark-mode icon compatibility    |
-| v2.1.0  | 2026-04-19 | ✨ Feature     | Dynamic dustbin management, contributing guidelines, and ESP32 codebase renaming                  |
-| v2.0.0  | 2026-04-17 | 🚀 Update      | Core infrastructure revamp: automated setup scripts, auto-host detection, OTA monitor, licensing  |
-| v1.9.0  | 2026-04-15 | 🎨 UI          | Peak-hours heatmaps, dark-mode styling, Refactored Excel export, DB Purge & web OTA UI            |
-| v1.8.0  | 2026-04-13 | 📝 Docs        | Comprehensive BinThere dashboard, server documentation, and v5.5 code context additions           |
-| v1.7.0  | 2026-03-27 | ✨ Feature     | Local Python integration for ML image endpoint testing and serial monitor terminal improvements   |
-| v1.6.0  | 2026-03-25 | 🤖 Hardware    | Hardware Pipeline v5 roll-out (Web UI, NVS, TOF & servo configuration refactoring)                |
-| v1.5.0  | 2026-03-23 | 📊 Export      | Extensive Excel export reporting, UI implementation, and feature documentation set                |
-| v1.4.0  | 2026-03-19 | 🚀 Launch      | Main backend API launch: authentication, real-time WebSocket layers, SQLite data storage          |
-| v1.3.0  | 2026-03-15 | 🔧 Fix         | WebSocket dynamic host routing and Python dependency specification                                |
-| v1.2.0  | 2026-02-24 | 🔒 Auth        | Platform login integration, token delivery, and fill level analytics aggregation                  |
-| v1.1.0  | 2026-02-23 | 📊 Analytics   | Initial real-time chart implementations and local DB schema architecture set                      |
-| v1.0.0  | 2026-02-17 | 🎉 Initialize  | Initial project commit and baseline repository formatting                                         |
+| v2.9.0  | 2026-04-24 | ⚡ Performance | Backend bottleneck elimination: async auth, DB indexing, fleet caching, and batched purge          |
+| v2.8.0  | 2026-04-24 | 🎨 UI          | Enhanced dropdown opacity and implemented click-outside-to-close behavior for Header navigation    |
+| v2.7.0  | 2026-04-23 | 🔧 Fix         | Resolved Export API 404 and expanded UI visuals                                                    |
+| v2.6.0  | 2026-04-23 | 🔧 Fix         | Logic Inversion: Small distance now maps to Empty; Restored Traffic Light (G/Y/R) visuals          |
+| v2.5.2  | 2026-04-23 | 🎨 UI          | Color Refinement: Restored waste-type identity (Blue/Green) with status-aware alert transitions    |
+| v2.5.1  | 2026-04-23 | 🪄 Magic       | High-Fidelity Visual Refinement: 3D glass cylinders, kinetic shimmer, and status-aware glow auras  |
+| v2.5.0  | 2026-04-23 | 🎨 UI          | Frosted Control Room: Redesigned dashboard hero, industrial bin cards, and sidebar export tool     |
+| v2.4.4  | 2026-04-23 | 🚀 Update      | Sequential Startup & Advanced Logging: Backend-first initialization and comprehensive event logs   |
+| v2.4.3  | 2026-04-21 | 🎨 UI          | Premium Dialogs: Replaced browser alerts/prompts with a "Frosted Control Room" glassmorphic modal  |
+| v2.4.2  | 2026-04-21 | 📝 Docs        | Documentation Overhaul: Modernized CONTRIBUTING.md with automated setup and UI tokens              |
+| v2.4.1  | 2026-04-20 | ✨ Feature     | Default Bin Seeding: Ensures 1 dustbin exists on first run while supporting dynamic additions      |
+| v2.4.0  | 2026-04-20 | 📊 Export      | Premium Reporting: Executive Summaries, predictive maintenance analytics, and date presets         |
+| v2.3.1  | 2026-04-19 | 📝 Docs        | Updated License from MIT to Apache 2.0                                                             |
+| v2.3.0  | 2026-04-19 | 🎨 UI          | "Frosted Control Room" glassmorphism overhaul and light theme elimination                          |
+| v2.2.0  | 2026-04-19 | 🎨 UI          | Redesigned Utilization Score card, Export to Excel UI, and native dark-mode icon compatibility     |
+| v2.1.0  | 2026-04-19 | ✨ Feature     | Dynamic dustbin management, contributing guidelines, and ESP32 codebase renaming                   |
+| v2.0.0  | 2026-04-17 | 🚀 Update      | Core infrastructure revamp: automated setup scripts, auto-host detection, OTA monitor, licensing   |
+| v1.9.0  | 2026-04-15 | 🎨 UI          | Peak-hours heatmaps, dark-mode styling, Refactored Excel export, DB Purge & web OTA UI             |
+| v1.8.0  | 2026-04-13 | 📝 Docs        | Comprehensive BinThere dashboard, server documentation, and v5.5 code context additions            |
+| v1.7.0  | 2026-03-27 | ✨ Feature     | Local Python integration for ML image endpoint testing and serial monitor terminal improvements    |
+| v1.6.0  | 2026-03-25 | 🤖 Hardware    | Hardware Pipeline v5 roll-out (Web UI, NVS, TOF & servo configuration refactoring)                 |
+| v1.5.0  | 2026-03-23 | 📊 Export      | Extensive Excel export reporting, UI implementation, and feature documentation set                 |
+| v1.4.0  | 2026-03-19 | 🚀 Launch      | Main backend API launch: authentication, real-time WebSocket layers, SQLite data storage           |
+| v1.3.0  | 2026-03-15 | 🔧 Fix         | WebSocket dynamic host routing and Python dependency specification                                 |
+| v1.2.0  | 2026-02-24 | 🔒 Auth        | Platform login integration, token delivery, and fill level analytics aggregation                   |
+| v1.1.0  | 2026-02-23 | 📊 Analytics   | Initial real-time chart implementations and local DB schema architecture set                       |
+| v1.0.0  | 2026-02-17 | 🎉 Initialize  | Initial project commit and baseline repository formatting                                          |
 
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+## [v2.13.7] — 2026-05-14
+
+### Summary
+
+Refactored the Electron backend spawning mechanism to use `extraResources` for production pathing and implemented a more robust startup sequence with detailed process logging.
+
+### Added
+
+- **Server Log Piping**: Added `[BinThere Server]` prefixing for all backend stdout/stderr logs in the Electron main process console.
+- **Async Readiness Check**: Moved the `waitForPort` polling into `createWindow` to ensure the UI only loads once the backend is fully initialized.
+
+### Changed
+
+- **Build Strategy**: Switched from `asarUnpack` to `extraResources` in `package.json` to ensure the server directory is correctly positioned in the `resources/` folder for production builds.
+- **Spawn Logic**: Updated `electron/main.cjs` to target `process.resourcesPath/server/server.js` in production, matching the new build configuration.
 
 ## [v2.13.6] — 2026-05-14
 
@@ -101,7 +118,6 @@ Fixed a critical issue where the packaged Electron application would display a b
 - **`package.json`** — Rewrote the `rebuild` script to target the system Node runtime instead of Electron, ensuring `better-sqlite3` is compiled against the correct ABI for the background server process.
 
 ---
-
 
 ## [v2.13.2] — 2026-05-13
 
@@ -229,7 +245,7 @@ Full project audit and critical bug fix pass. Corrected the **fill-level formula
 
 ### Changed
 
-- **Broadcast Optimization** — `POST /api/bins/:id/measurement` was calling `getBinWithCompartments(binId)` for the WebSocket broadcast *after* already patching the fleet cache. Now uses the already-patched cache entry, eliminating a redundant database query on every sensor reading.
+- **Broadcast Optimization** — `POST /api/bins/:id/measurement` was calling `getBinWithCompartments(binId)` for the WebSocket broadcast _after_ already patching the fleet cache. Now uses the already-patched cache entry, eliminating a redundant database query on every sensor reading.
 - **Test Sensor Script Rewrite** — `test-sensor.ps1` updated with:
   - **3-second interval** (was 2 seconds)
   - **0–25cm range** (was 2–25cm, excluding 0cm which represents a full bin)
