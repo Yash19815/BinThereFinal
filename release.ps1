@@ -176,7 +176,8 @@ $releaseNotes = if ($endIndex -eq -1) {
 }
 
 $releaseNotes  = $releaseNotes.Trim()
-$tempNotesFile = "_release_notes.tmp"
+# MOVED TEMP FILE TO SYSTEM TEMP DIRECTORY TO AVOID GIT ADD .
+$tempNotesFile = Join-Path $env:TEMP "_binthere_release_notes.tmp"
 Set-Content -Path $tempNotesFile -Value $releaseNotes -Encoding UTF8
 
 Write-Host "  [OK] Release notes extracted for $TAG" -ForegroundColor Green
