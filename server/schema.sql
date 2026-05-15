@@ -12,12 +12,12 @@ CREATE TABLE IF NOT EXISTS bins (
   id              INTEGER PRIMARY KEY,
   name            TEXT    NOT NULL,
   location        TEXT    NOT NULL,
-  max_height_cm   REAL    NOT NULL DEFAULT 50   -- empty-bin height (sensor to bottom)
+  max_height_cm   REAL    NOT NULL DEFAULT 25   -- empty-bin height (sensor to bottom)
 );
 
 -- Default bin (matches server seed; harmless to re-run)
 INSERT OR IGNORE INTO bins (id, name, location, max_height_cm)
-VALUES (1, 'Dustbin #001', 'Main Campus', 50);
+VALUES (1, 'Dustbin #001', 'Main Campus', 25);
 
 -- ── Measurements ─────────────────────────────────────────────
 -- Every sensor reading posted by the ESP32 or test scripts.
@@ -30,10 +30,6 @@ CREATE TABLE IF NOT EXISTS measurements (
   timestamp           TEXT    NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (bin_id) REFERENCES bins(id)
 );
-
--- Index for fast per-compartment lookups (analytics, latest reading)
-CREATE INDEX IF NOT EXISTS idx_measurements_bin_comp_ts
-  ON measurements (bin_id, compartment, timestamp DESC);
 
 -- ── Fill Cycles ───────────────────────────────────────────────
 -- One row per detected fill event (bin crossed FULL_THRESHOLD
@@ -48,6 +44,26 @@ CREATE TABLE IF NOT EXISTS fill_cycles (
   FOREIGN KEY (bin_id) REFERENCES bins(id)
 );
 
--- Index for fast daily-count aggregation used by the analytics endpoint
-CREATE INDEX IF NOT EXISTS idx_fill_cycles_bin_filled
-  ON fill_cycles (bin_id, filled_at);
+-- ── Users ─────────────────────────────────────────────────────
+-- Registered dashboard users and administrators.
+CREATE TABLE IF NOT EXISTS users (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  username      TEXT    NOT NULL UNIQUE,
+  password_hash TEXT    NOT NULL,
+  role          TEXT    NOT NULL DEFAULT 'user' CHECK(role IN ('admin','user')),
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Indexes ───────────────────────────────────────────────────
+-- Performance indexes to prevent full table scans on high-frequency queries
+CREATE INDEX IF NOT EXISTS idx_measurements_bin_comp_ts
+  ON measurements(bin_id, compartment, timestamp DESC);
+
+CREATE INDEX IF NOT EXISTS idx_measurements_timestamp
+  ON measurements(timestamp);
+
+CREATE INDEX IF NOT EXISTS idx_fill_cycles_bin_comp
+  ON fill_cycles(bin_id, compartment, filled_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_fill_cycles_filled_at
+  ON fill_cycles(filled_at);

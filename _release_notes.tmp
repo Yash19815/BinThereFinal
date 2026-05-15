@@ -1,0 +1,9 @@
+### Summary
+
+Synchronized `schema.sql` to accurately reflect the actual database schema initialized by `server.js`.
+
+### Fixed
+
+- Added the missing `users` table to `schema.sql`.
+- Added missing performance indexes (`idx_measurements_timestamp`, `idx_fill_cycles_bin_comp`, `idx_fill_cycles_filled_at`).
+- Corrected the default `max_height_cm` to 25.

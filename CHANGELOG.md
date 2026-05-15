@@ -2,6 +2,8 @@
 
 | Version | Date       | Type           | Summary                                                                                            |
 | ------- | ---------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| v2.13.10| 2026-05-15 | 🔧 Fix         | Synchronized schema.sql with server.js adding missing users table, indexes, and correct bin height |
+| v2.13.9 | 2026-05-14 | 📝 Docs        | Expanded and standardized documentation across all sub-components                                  |
 | v2.13.8 | 2026-05-14 | 📝 Docs        | Comprehensive detail expansion across all component READMEs and Pin Connection integration         |
 | v2.13.7 | 2026-05-14 | 🔧 Fix         | Migrated to extraResources and refactored backend spawn logic for improved stability               |
 | v2.13.6 | 2026-05-14 | 🔧 Fix         | Standardized backend server spawn logic with stdout piping and startup delay                       |
@@ -46,6 +48,18 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+## [v2.13.10] — 2026-05-15
+
+### Summary
+
+Synchronized `schema.sql` to accurately reflect the actual database schema initialized by `server.js`.
+
+### Fixed
+
+- Added the missing `users` table to `schema.sql`.
+- Added missing performance indexes (`idx_measurements_timestamp`, `idx_fill_cycles_bin_comp`, `idx_fill_cycles_filled_at`).
+- Corrected the default `max_height_cm` to 25.
 
 ## [v2.13.9] — 2026-05-14
 
