@@ -12,6 +12,8 @@ import FleetUtilizationChart from "./components/dashboard/FleetUtilizationChart"
 import BinCard from "./components/dashboard/BinCard";
 import HistoryModal from "./components/modals/HistoryModal";
 import PromptModal from "./components/modals/PromptModal";
+import SetupWizard from "./components/modals/SetupWizard";
+import AdminSettingsModal from "./components/modals/AdminSettingsModal";
 
 import EmptyState from "./components/ui/EmptyState";
 import InlineError from "./components/ui/InlineError";
@@ -46,6 +48,33 @@ export default function App() {
     onSubmit: () => {},
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSetupOpen, setIsSetupOpen] = useState(false);
+  const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    const checkConfigStatus = async () => {
+      const isCompleted = localStorage.getItem("bt_setup_completed");
+      if (isCompleted !== "true") {
+        try {
+          const res = await fetch(`${API_URL}/api/config/status`, {
+            headers: authHeaders(token),
+          });
+          const data = await res.json();
+          if (data.status !== "success" || !data.config || !data.config.EMPTY_THRESHOLD) {
+            setIsSetupOpen(true);
+          } else {
+            localStorage.setItem("bt_setup_completed", "true");
+          }
+        } catch {
+          setIsSetupOpen(true);
+        }
+      }
+    };
+
+    if (token) {
+      checkConfigStatus();
+    }
+  }, [token]);
 
   const closePrompt = () =>
     setPromptConfig((prev) => ({ ...prev, isOpen: false }));
@@ -159,7 +188,13 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header bins={bins} wsStatus={wsStatus} user={user} onLogout={logout} />
+      <Header
+        bins={bins}
+        wsStatus={wsStatus}
+        user={user}
+        onLogout={logout}
+        onOpenAdminSettings={() => setIsAdminSettingsOpen(true)}
+      />
 
       <main className="main">
         <div className="page-title-row">
@@ -287,6 +322,25 @@ export default function App() {
         fields={promptConfig.fields}
         onSubmit={promptConfig.onSubmit}
         onClose={closePrompt}
+      />
+
+      <SetupWizard
+        isOpen={isSetupOpen}
+        token={token}
+        onComplete={(newConfig) => {
+          setIsSetupOpen(false);
+          refreshBins();
+        }}
+        onClose={() => setIsSetupOpen(false)}
+      />
+
+      <AdminSettingsModal
+        isOpen={isAdminSettingsOpen}
+        onClose={() => setIsAdminSettingsOpen(false)}
+        token={token}
+        onConfigUpdate={(newConfig) => {
+          refreshBins();
+        }}
       />
     </div>
   );

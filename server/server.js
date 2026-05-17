@@ -42,6 +42,8 @@ import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import exportRoutes from "./exportRoutes.js";
+import fs from "fs";
+import { exec } from "child_process";
 
 dotenv.config();
 
@@ -64,6 +66,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // If PROD_DB_DIR exists (Electron Prod), use it. Otherwise, use local directory (Dev).
 const dbDir = process.env.PROD_DB_DIR || __dirname; 
 const dbPath = path.join(dbDir, 'database.sqlite');
+
+// Load environment from writable dbDir to support overrides in production
+if (fs.existsSync(path.join(dbDir, '.env'))) {
+  dotenv.config({ path: path.join(dbDir, '.env'), override: true });
+}
 
 const db = new Database(dbPath);
 
@@ -176,10 +183,59 @@ function requireAuth(req, res, next) {
   }
 }
 
+function requireAdmin(req, res, next) {
+  requireAuth(req, res, () => {
+    if (req.user && req.user.role === "admin") {
+      next();
+    } else {
+      return res.status(403).json({ status: "error", message: "Forbidden — Administrative privileges required" });
+    }
+  });
+}
+
 // ── Fill-Cycle Detection ─────────────────────────────────────────────────────
 
-const FULL_THRESHOLD = 60;
-const EMPTY_THRESHOLD = 20;
+let FULL_THRESHOLD = parseInt(process.env.FULL_THRESHOLD || "60", 10);
+let EMPTY_THRESHOLD = parseInt(process.env.EMPTY_THRESHOLD || "20", 10);
+let BACKUP_DIR = process.env.BACKUP_DIR || "";
+
+function updateEnvFile(updates) {
+  const envPath = path.join(dbDir, '.env');
+  let content = "";
+  if (fs.existsSync(envPath)) {
+    content = fs.readFileSync(envPath, 'utf8');
+  } else {
+    const baseEnvPath = path.join(__dirname, '.env');
+    if (fs.existsSync(baseEnvPath)) {
+      content = fs.readFileSync(baseEnvPath, 'utf8');
+    }
+  }
+  
+  let lines = content.split(/\r?\n/);
+  const keysToUpdate = { ...updates };
+  
+  lines = lines.map(line => {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)$/);
+    if (match) {
+      const key = match[1];
+      if (key in keysToUpdate) {
+        const val = keysToUpdate[key];
+        delete keysToUpdate[key];
+        return `${key}=${val}`;
+      }
+    }
+    return line;
+  });
+  
+  for (const [key, val] of Object.entries(keysToUpdate)) {
+    lines.push(`${key}=${val}`);
+  }
+  
+  const newContent = lines.join('\n');
+  const tmpPath = envPath + '.tmp';
+  fs.writeFileSync(tmpPath, newContent, 'utf8');
+  fs.renameSync(tmpPath, envPath);
+}
 const fillStateCache = new Map();
 
 function getFillState(binId, compartment) {
@@ -347,6 +403,9 @@ const LOG_ROUTES = [
   { pattern: /^\/api\/export\/excel(\?.*)?$/, message: "Reporting: Generated standardized audit document (Excel format)" },
   { pattern: /^\/api\/export\/metadata$/, message: "System Integrity: Verified availability of archival data for reporting" },
   { pattern: /^\/api\/logs\/event$/, message: "Audit Trail: Logged manual administrative interaction with the dashboard" },
+  { pattern: /^\/api\/config\/status$/, message: "System Configuration: Retrieved dynamic threshold parameters" },
+  { pattern: /^\/api\/config\/save$/, message: "System Configuration: Modified threshold variables and updated operational environment" },
+  { pattern: /^\/api\/admin\/backup$/, message: "System Maintenance: Initiated database snapshot backup" },
 ];
 
 const getHumanReadableLog = (method, url, statusCode) => {
@@ -665,6 +724,139 @@ app.get("/api/bins/:id/heatmap", requireAuth, (req, res) => {
 
 // Excel export routes
 app.use("/api", exportRoutes);
+
+app.get("/api/config/status", requireAdmin, (req, res) => {
+  res.json({
+    status: "success",
+    config: {
+      FULL_THRESHOLD,
+      EMPTY_THRESHOLD,
+      BACKUP_DIR
+    }
+  });
+});
+
+app.post("/api/config/save", requireAdmin, (req, res) => {
+  const { fullThreshold, emptyThreshold, backupDir } = req.body;
+  
+  const parsedFull = parseInt(fullThreshold, 10);
+  const parsedEmpty = parseInt(emptyThreshold, 10);
+  
+  if (isNaN(parsedFull) || parsedFull < 0 || parsedFull > 100) {
+    return res.status(400).json({ status: "error", message: "Invalid FULL_THRESHOLD (must be 0-100)" });
+  }
+  if (isNaN(parsedEmpty) || parsedEmpty < 0 || parsedEmpty > 100) {
+    return res.status(400).json({ status: "error", message: "Invalid EMPTY_THRESHOLD (must be 0-100)" });
+  }
+  if (parsedEmpty >= parsedFull) {
+    return res.status(400).json({ status: "error", message: "EMPTY_THRESHOLD must be less than FULL_THRESHOLD" });
+  }
+  
+  FULL_THRESHOLD = parsedFull;
+  EMPTY_THRESHOLD = parsedEmpty;
+  BACKUP_DIR = typeof backupDir === "string" ? backupDir.trim() : "";
+  
+  try {
+    updateEnvFile({
+      FULL_THRESHOLD,
+      EMPTY_THRESHOLD,
+      BACKUP_DIR
+    });
+    
+    rebuildFleetCache();
+    
+    res.json({
+      status: "success",
+      message: "Configuration saved successfully",
+      config: {
+        FULL_THRESHOLD,
+        EMPTY_THRESHOLD,
+        BACKUP_DIR
+      }
+    });
+  } catch (err) {
+    console.error("Failed to save .env file:", err);
+    res.status(500).json({ status: "error", message: `Failed to write configuration: ${err.message}` });
+  }
+});
+
+app.post("/api/admin/backup", requireAdmin, async (req, res) => {
+  let backupTargetDir = BACKUP_DIR;
+  if (!backupTargetDir || !backupTargetDir.trim()) {
+    backupTargetDir = path.join(dbDir, "backups");
+  }
+  
+  try {
+    if (!fs.existsSync(backupTargetDir)) {
+      fs.mkdirSync(backupTargetDir, { recursive: true });
+    }
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupFile = `backup_${timestamp}.sqlite`;
+    const backupPath = path.join(backupTargetDir, backupFile);
+    
+    await db.backup(backupPath);
+    
+    res.json({
+      status: "success",
+      message: "Database backup completed successfully",
+      backupFile,
+      backupPath
+    });
+  } catch (err) {
+    console.error("Backup failed:", err);
+    res.status(500).json({ status: "error", message: `Backup failed: ${err.message}` });
+  }
+});
+
+app.get("/api/admin/select-directory", requireAdmin, (req, res) => {
+  if (process.platform !== "win32") {
+    return res.status(400).json({
+      status: "error",
+      message: "Native directory selection is only supported on Windows host systems."
+    });
+  }
+
+  const command = `
+    Add-Type -AssemblyName System.Windows.Forms
+    $f = New-Object System.Windows.Forms.FolderBrowserDialog
+    $f.Description = 'Select Backup Directory Target'
+    $f.ShowNewFolderButton = $true
+    $w = New-Object System.Windows.Forms.Form
+    $w.TopMost = $true
+    if ($f.ShowDialog($w) -eq 'OK') {
+      Write-Output $f.SelectedPath
+    }
+    $w.Dispose()
+  `;
+
+  const buffer = Buffer.from(command, "utf16le");
+  const base64 = buffer.toString("base64");
+  const psCommand = `powershell.exe -NoProfile -STA -EncodedCommand ${base64}`;
+
+  exec(psCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error("Folder Dialog Error:", error);
+      return res.status(500).json({
+        status: "error",
+        message: `Failed to open directory dialog: \${error.message}`
+      });
+    }
+
+    const selectedPath = stdout.trim();
+    if (selectedPath) {
+      res.json({
+        status: "success",
+        path: selectedPath
+      });
+    } else {
+      res.json({
+        status: "cancel",
+        message: "User cancelled directory selection"
+      });
+    }
+  });
+});
 
 const HOST = process.env.HOST || "0.0.0.0";
 server.listen(PORT, HOST, () => {

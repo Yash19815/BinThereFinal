@@ -9,7 +9,7 @@ import myLogo from "../../assets/logo.png";
  * Application header bar containing the logo, WebSocket status indicator,
  * notification bell with dropdown, and a profile menu.
  */
-export default function Header({ bins, wsStatus, user, onLogout }) {
+export default function Header({ bins, wsStatus, user, onLogout, onOpenAdminSettings }) {
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
@@ -90,6 +90,20 @@ export default function Header({ bins, wsStatus, user, onLogout }) {
                 <strong>{user?.username ?? "Admin User"}</strong>
                 <span className="role-tag">{user?.role ?? "admin"}</span>
               </div>
+
+              {user?.role === "admin" && onOpenAdminSettings && (
+                <div className="profile-action admin-settings-action">
+                  <button
+                    className="admin-settings-menu-btn"
+                    onClick={() => {
+                      setShowProfile(false);
+                      onOpenAdminSettings();
+                    }}
+                  >
+                    ⚙️ System Settings
+                  </button>
+                </div>
+              )}
 
               <div className="profile-action profile-logout">
                 <button

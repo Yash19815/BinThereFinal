@@ -57,7 +57,8 @@ function startBackend() {
     cwd: path.dirname(serverPath),
     env: { 
       ...process.env, 
-      PROD_DB_DIR: app.getPath('userData') 
+      PROD_DB_DIR: app.getPath('userData'),
+      IS_ELECTRON: 'true'
     },
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
   });
@@ -99,6 +100,14 @@ function createWindow() {
 // ─── App lifecycle ────────────────────────────────────────────────────────────
 
 ipcMain.handle('app-version', () => app.getVersion());
+ipcMain.handle('dialog:openDirectory', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  });
+  if (!canceled) {
+    return filePaths[0];
+  }
+});
 
 app.whenReady().then(async () => {
   applyPendingInstall();

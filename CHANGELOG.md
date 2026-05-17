@@ -2,6 +2,8 @@
 
 | Version | Date       | Type           | Summary                                                                                            |
 | ------- | ---------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| v2.14.1  | 2026-05-17 | 🔧 Fix         | Resolved powershell non-interactive freeze and enhanced topmost focus for folder browser dialog    |
+| v2.14.0  | 2026-05-17 | ✨ Feature     | Shipped Setup Wizard, Backup Control Layer, native folder browsing, and host directory picker bypass |
 | v2.13.10| 2026-05-15 | 🔧 Fix         | Synchronized schema.sql with server.js adding missing users table, indexes, and correct bin height |
 | v2.13.9 | 2026-05-14 | 📝 Docs        | Expanded and standardized documentation across all sub-components                                  |
 | v2.13.8 | 2026-05-14 | 📝 Docs        | Comprehensive detail expansion across all component READMEs and Pin Connection integration         |
@@ -48,6 +50,38 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+## [v2.14.1] — 2026-05-17
+
+### Summary
+
+Resolved the powershell `-NonInteractive` hang during directory browsing in standard web browser contexts and implemented a reliable, topmost form owner pattern using Base64 UTF-16LE encoding.
+
+### Fixed
+
+- **PowerShell Dialog Crash** (`server/server.js`): Replaced buggy raw power-shell execution command that was using `-NonInteractive` flag (blocking GUI dialogs) with a robust `-STA` encoded command script.
+- **Window Focus Guarantee**: Wrapped the native `FolderBrowserDialog` with a temporary, topmost `System.Windows.Forms.Form` instance to guarantee the file explorer window pops directly in front of the active web browser.
+- **Command Quoting Resolution**: Utilized PowerShell `-EncodedCommand` option (Base64 UTF-16LE) to completely eliminate escaping and nested double/single-quote parsing crashes inside Node.js `exec`.
+
+## [v2.14.0] — 2026-05-17
+
+### Summary
+
+Shipped the **First-Run Admin Setup Wizard** and **On-Demand Admin Settings Control Layer** UI, fully integrated with dynamic threshold parameters, native Electron folder browsing, and always-available browser-compatible directory pickers.
+
+### Added
+
+- **First-Run Admin Setup Wizard** (`client/src/components/modals/SetupWizard.jsx`): A glassmorphic multi-step wizard to guide administrators through primary threshold configuration (`FULL_THRESHOLD` and `EMPTY_THRESHOLD`) and backup directory path parameters on first launch.
+- **On-Demand Admin Settings Modal** (`client/src/components/modals/AdminSettingsModal.jsx`): A beautiful central control layer accessible via the user profile dropdown to configure limits live and execute **Instant Hot-Backups** on-demand.
+- **Electron Directory Picker Bridge**: IPC connection integration to open native Windows folder dialogues directly from the dashboard modals via the preload bridge when running in Electron.
+- **Native Host Folder Dialog Route** (`server/server.js`): Added a `/api/admin/select-directory` endpoint. When running in a web browser on Windows, it spawns a native host `FolderBrowserDialog` via PowerShell, capturing absolute backup target paths directly.
+
+### Changed
+
+- **Universal Folder Selection**: Upgraded Setup Wizard and Admin Settings modals to try retrieving native Windows host paths first via the backend endpoint, falling back gracefully to standard browser picker APIs or relative web uploads.
+- **Interactive Settings Dropdown** (`client/src/components/layout/Header.jsx`): Added direct accessibility to the administrative dashboard panel for accounts cataloged under the `admin` role tag.
+- **Global Configuration Pipeline** (`client/src/App.jsx`): Wired system initialization state machine, live fleet meter recalculations, and customized glassmorphic design configurations.
+- **Added `rebuild:node` Script** (`package.json`): Added automated script command to quickly recompile native binary bindings for standard web-only development.
 
 ## [v2.13.10] — 2026-05-15
 
