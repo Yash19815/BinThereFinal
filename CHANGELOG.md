@@ -2,6 +2,7 @@
 
 | Version  | Date       | Type           | Summary                                                                                              |
 | -------- | ---------- | -------------- | ---------------------------------------------------------------------------------------------------- |
+| v2.14.1  | 2026-05-19 | 📝 Docs        | Added system connection architecture flowcharts and serial monitor authentication sequence diagrams |
 | v2.14.0  | 2026-05-17 | ✨ Feature     | Shipped Setup Wizard, Backup Control Layer, native folder browsing, and host directory picker bypass |
 | v2.13.10 | 2026-05-15 | 🔧 Fix         | Synchronized schema.sql with server.js adding missing users table, indexes, and correct bin height   |
 | v2.13.9  | 2026-05-14 | 📝 Docs        | Expanded and standardized documentation across all sub-components                                    |
@@ -49,6 +50,17 @@
 All notable changes to the BinThere Dashboard are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
+
+## [v2.14.1] — 2026-05-19
+
+### Summary
+
+Added comprehensive visual system connection architecture flowcharts and sequence/state logic diagrams for the ESP32 serial monitor login flow in `README.md`.
+
+### Added
+
+- **System Architecture Diagram** (`README.md`): Integrated an industrial-grade Mermaid system flowchart documenting full-stack client-server-database-edge interactions.
+- **ESP32 Serial Monitor Login Flow** (`README.md`): Integrated a high-fidelity sequence and logic flowchart in the hardware section mapping the password verification sequence in `webpage.h`.
 
 ## [v2.14.0] — 2026-05-17
 

@@ -1,7 +1,7 @@
 # BinThere — Smart Waste Intelligence Dashboard
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache2.0-yellow.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/Version-2.13.8-orange)](package.json)
+[![Version](https://img.shields.io/badge/Version-2.14.1-orange)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-v18+-green)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18-blue)](https://react.dev/)
 [![ESP32](https://img.shields.io/badge/Hardware-ESP32-red)](https://www.espressif.com/)
@@ -50,6 +50,68 @@ BinThere is a high-performance, real-time monitoring ecosystem designed for smar
 
 * **Excel Intelligence**: Premium executive reports with IST timestamping, KPI summaries, predictive maintenance forecasting, and recursive data tracking.
 * **Date-Range Filtering**: Export specific temporal windows using one-tap presets (Today, 7D, 30D) or custom date pickers.
+
+---
+
+## 📊 System Architecture
+
+The following diagram illustrates the end-to-end telemetry and control network of the BinThere ecosystem. It spans from edge-layer hardware and local machine-learning classifications to standard WebSockets and a dedicated glassmorphism React dashboard bundled within a native desktop runtime.
+
+```mermaid
+flowchart TB
+    %% Core Nodes & Classes
+    subgraph ClientSpace ["💻 Client Space (Desktop App / Web Browser)"]
+        direction LR
+        Electron["📦 Electron Wrapper<br/>(Native Runtime)"]
+        ReactUI["🎨 React 18 SPA (Vite)<br/>'Frosted Control Room'"]
+        Preload["🔗 Secure Preload Bridge<br/>(IPC Renderer)"]
+        
+        Electron <-->|IPC / contextBridge| Preload
+        Preload <--> ReactUI
+    end
+
+    subgraph ServerSpace ["🖥️ Server Space (Local or Remote Node Host)"]
+        Express["🚂 Express Web Server<br/>(Node.js server.js)"]
+        WS["⚡ WebSocket Server (ws)<br/>(Real-Time Broadcast)"]
+        SQLite[("🗄️ SQLite Database<br/>(better-sqlite3)")]
+        Excel["📊 ExcelJS Engine<br/>(IST-Localized Reports)"]
+        
+        Express <--> WS
+        Express <--> SQLite
+        Express ---> Excel
+    end
+
+    subgraph EdgeSpace ["🤖 Edge IoT Space (Physical Hardware / ML Core)"]
+        ESP32["🔌 ESP32 Microcontroller<br/>(Arduino Core C++)"]
+        PiZero["🧠 Raspberry Pi Zero 2W<br/>(ML Master Brain)"]
+        Sensors["📡 Sensors<br/>(HC-SR04, VL53L0X, Soil)"]
+        Actuators["⚙️ Actuators<br/>(SG90, MG995 Servos)"]
+        
+        PiZero <-->|UART Serial Bridge| ESP32
+        ESP32 <--> Sensors
+        ESP32 <--> Actuators
+    end
+
+    %% Network & Protocol Bridges
+    ReactUI <-->|HTTP REST / JWT| Express
+    ReactUI <-->|ws:// dynamic connection| WS
+    ESP32 -->|POST /api/bins/:id/measurement<br/>(Device API Key)| Express
+    
+    %% Styles & Theme
+    classDef client fill:#1a233a,stroke:#3b82f6,stroke-width:2px,color:#fff,round:20px;
+    classDef server fill:#1e1e24,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef edge fill:#2d1a2c,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef database fill:#1c2d37,stroke:#eab308,stroke-width:2px,color:#fff;
+    
+    class Electron,ReactUI,Preload,ClientSpace client;
+    class Express,WS,Excel,ServerSpace server;
+    class ESP32,PiZero,Sensors,Actuators,EdgeSpace edge;
+    class SQLite database;
+
+    style ClientSpace fill:#0f172a,stroke:#3b82f6,stroke-dasharray: 5 5;
+    style ServerSpace fill:#090d16,stroke:#10b981,stroke-dasharray: 5 5;
+    style EdgeSpace fill:#180f1a,stroke:#ec4899,stroke-dasharray: 5 5;
+```
 
 ---
 
@@ -245,6 +307,49 @@ The system utilizes an ESP32 microcontroller to interface with diverse sensors a
 
 > [!IMPORTANT]
 > Your `binthere_final_pipeline.ino`, `config.h`, `webpage.h` must be in a folder named same as your .ino file and the folder should be located in `Documents/Arduino`.
+
+### 🔐 Serial Monitor Login Flow
+
+To access the high-speed Web Serial Monitor served directly from the ESP32 (running on port 80), clients undergo a seamless authentication flow built into `webpage.h`. The JavaScript-driven state machine checks session validity before initiating the persistent logging WebSocket loop:
+
+```mermaid
+flowchart TD
+    Start([🌐 User navigates to http://device-ip]) --> ServeHTML[🔌 ESP32 serves WS_MONITOR_HTML PROGMEM Page]
+    ServeHTML --> CheckSession{🔑 Session storage has bt_auth == '1'?}
+    
+    CheckSession -- No --> ShowLogin[🎨 Render Premium Login UI Card]
+    CheckSession -- Yes --> ShowTerminal[💻 Render Glassmorphic Serial Terminal]
+    
+    ShowLogin --> UserInput[/User enters Password/]
+    UserInput --> AuthCheck{❓ Plaintext == 'binthere2026'}
+    
+    AuthCheck -- No --> AuthFail[❌ Show 'Access Denied' Error Shake]
+    AuthFail --> ShowLogin
+    
+    AuthCheck -- Yes --> SetSession[💾 Set bt_auth = '1' in sessionStorage]
+    SetSession --> ShowTerminal
+    
+    ShowTerminal --> InitWS[⚡ Initiate WebSocket ws://device-ip/ws]
+    InitWS --> WSConnect{❓ Connection Accepted?}
+    
+    WSConnect -- Yes --> StreamLogs[📡 Receive & Stream real-time ESP32 UART Logs]
+    WSConnect -- No --> RetryWS[🔄 Retry WebSocket Connection after 3s]
+    RetryWS --> InitWS
+    
+    StreamLogs --> Disconnect{⚠️ WS Disconnect / Tab Close?}
+    Disconnect -- Yes --> End([🚪 Session Terminated / Auto-clean])
+    
+    %% Styles & Theme
+    classDef step fill:#1a233a,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    classDef esp fill:#2d1a2c,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef decision fill:#202b20,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef terminal fill:#1e1e24,stroke:#eab308,stroke-width:2px,color:#fff;
+
+    class Start,ShowLogin,UserInput,AuthFail,SetSession,InitWS,RetryWS,End step;
+    class ServeHTML esp;
+    class CheckSession,AuthCheck,WSConnect,Disconnect decision;
+    class ShowTerminal,StreamLogs terminal;
+```
 
 ---
 
