@@ -66,7 +66,7 @@ flowchart TB
         ReactUI["🎨 React 18 SPA (Vite)<br/>'Frosted Control Room'"]
         Preload["🔗 Secure Preload Bridge<br/>(IPC Renderer)"]
         
-        Electron <-->|IPC / contextBridge| Preload
+        Electron <-->|"IPC / contextBridge"| Preload
         Preload <--> ReactUI
     end
 
@@ -87,15 +87,15 @@ flowchart TB
         Sensors["📡 Sensors<br/>(HC-SR04, VL53L0X, Soil)"]
         Actuators["⚙️ Actuators<br/>(SG90, MG995 Servos)"]
         
-        PiZero <-->|UART Serial Bridge| ESP32
+        PiZero <-->|"UART Serial Bridge"| ESP32
         ESP32 <--> Sensors
         ESP32 <--> Actuators
     end
 
     %% Network & Protocol Bridges
-    ReactUI <-->|HTTP REST / JWT| Express
-    ReactUI <-->|ws:// dynamic connection| WS
-    ESP32 -->|POST /api/bins/:id/measurement<br/>(Device API Key)| Express
+    ReactUI <-->|"HTTP REST / JWT"| Express
+    ReactUI <-->|"ws:// dynamic connection"| WS
+    ESP32 -->|"POST /api/bins/:id/measurement<br/>(Device API Key)"| Express
     
     %% Styles & Theme
     classDef client fill:#1a233a,stroke:#3b82f6,stroke-width:2px,color:#fff,round:20px;
@@ -314,30 +314,30 @@ To access the high-speed Web Serial Monitor served directly from the ESP32 (runn
 
 ```mermaid
 flowchart TD
-    Start([🌐 User navigates to http://device-ip]) --> ServeHTML[🔌 ESP32 serves WS_MONITOR_HTML PROGMEM Page]
-    ServeHTML --> CheckSession{🔑 Session storage has bt_auth == '1'?}
+    Start(["🌐 User navigates to http://device-ip"]) --> ServeHTML["🔌 ESP32 serves WS_MONITOR_HTML PROGMEM Page"]
+    ServeHTML --> CheckSession{"🔑 Session storage has bt_auth == '1'?"}
     
-    CheckSession -- No --> ShowLogin[🎨 Render Premium Login UI Card]
-    CheckSession -- Yes --> ShowTerminal[💻 Render Glassmorphic Serial Terminal]
+    CheckSession -- "No" --> ShowLogin["🎨 Render Premium Login UI Card"]
+    CheckSession -- "Yes" --> ShowTerminal["💻 Render Glassmorphic Serial Terminal"]
     
-    ShowLogin --> UserInput[/User enters Password/]
-    UserInput --> AuthCheck{❓ Plaintext == 'binthere2026'}
+    ShowLogin --> UserInput[/ "User enters Password" /]
+    UserInput --> AuthCheck{"❓ Plaintext == 'binthere2026'"}
     
-    AuthCheck -- No --> AuthFail[❌ Show 'Access Denied' Error Shake]
+    AuthCheck -- "No" --> AuthFail["❌ Show 'Access Denied' Error Shake"]
     AuthFail --> ShowLogin
     
-    AuthCheck -- Yes --> SetSession[💾 Set bt_auth = '1' in sessionStorage]
+    AuthCheck -- "Yes" --> SetSession["💾 Set bt_auth = '1' in sessionStorage"]
     SetSession --> ShowTerminal
     
-    ShowTerminal --> InitWS[⚡ Initiate WebSocket ws://device-ip/ws]
-    InitWS --> WSConnect{❓ Connection Accepted?}
+    ShowTerminal --> InitWS["⚡ Initiate WebSocket ws://device-ip/ws"]
+    InitWS --> WSConnect{"❓ Connection Accepted?"}
     
-    WSConnect -- Yes --> StreamLogs[📡 Receive & Stream real-time ESP32 UART Logs]
-    WSConnect -- No --> RetryWS[🔄 Retry WebSocket Connection after 3s]
+    WSConnect -- "Yes" --> StreamLogs["📡 Receive & Stream real-time ESP32 UART Logs"]
+    WSConnect -- "No" --> RetryWS["🔄 Retry WebSocket Connection after 3s"]
     RetryWS --> InitWS
     
-    StreamLogs --> Disconnect{⚠️ WS Disconnect / Tab Close?}
-    Disconnect -- Yes --> End([🚪 Session Terminated / Auto-clean])
+    StreamLogs --> Disconnect{"⚠️ WS Disconnect / Tab Close?"}
+    Disconnect -- "Yes" --> End(["🚪 Session Terminated / Auto-clean"])
     
     %% Styles & Theme
     classDef step fill:#1a233a,stroke:#3b82f6,stroke-width:2px,color:#fff;

@@ -62,6 +62,10 @@ Added comprehensive visual system connection architecture flowcharts and sequenc
 - **System Architecture Diagram** (`README.md`): Integrated an industrial-grade Mermaid system flowchart documenting full-stack client-server-database-edge interactions.
 - **ESP32 Serial Monitor Login Flow** (`README.md`): Integrated a high-fidelity sequence and logic flowchart in the hardware section mapping the password verification sequence in `webpage.h`.
 
+### Fixed
+
+- **Mermaid Diagram Syntax** (`README.md`): Wrapped diagram display strings containing special characters, colons, slashes, and parentheses in double quotes to prevent GitHub parser failures.
+
 ## [v2.14.0] — 2026-05-17
 
 ### Summary
